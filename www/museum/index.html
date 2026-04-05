@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Curiosity Museum - Musee</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/vendor/three/three.module.js",
+          "three/addons/": "/vendor/three/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body class="page page-museum">
+    <div class="page-glow" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="site-mark" href="/">Curiosity Museum</a>
+      <nav class="site-nav">
+        <a href="/">Soumettre</a>
+        <a href="/museum/" aria-current="page">Musee</a>
+        <a href="/admin/">Admin</a>
+      </nav>
+    </header>
+
+    <main class="shell shell-museum">
+      <section class="viewer-panel panel">
+        <div class="viewer-header">
+          <div>
+            <p class="eyebrow">Exposition</p>
+            <h1>Cabinet des curiosites reconstruites</h1>
+          </div>
+          <div class="viewer-actions">
+            <a class="button secondary" href="/">Ajouter un nouvel objet</a>
+          </div>
+        </div>
+
+        <div class="viewer-stage" data-viewer-stage>
+          <div class="viewer-loading" data-viewer-status>Chargement des artefacts...</div>
+          <div class="viewer-canvas" data-viewer-canvas></div>
+
+          <aside class="viewer-meta panel">
+            <p class="eyebrow" data-viewer-count>0 / 0</p>
+            <h2 data-viewer-title>Archive vide</h2>
+            <p class="viewer-meta-line" data-viewer-author></p>
+            <p class="viewer-meta-line" data-viewer-created></p>
+            <p class="viewer-meta-state" data-viewer-state></p>
+            <p class="viewer-description" data-viewer-description>
+              Aucune contribution n'est encore disponible.
+            </p>
+          </aside>
+
+          <div class="viewer-nav">
+            <button class="nav-button" type="button" data-prev aria-label="Objet precedent">Precedent</button>
+            <button class="nav-button" type="button" data-next aria-label="Objet suivant">Suivant</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/assets/museum.js"></script>
+  </body>
+</html>

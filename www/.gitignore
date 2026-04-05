@@ -1,0 +1,7 @@
+data/.tmp/
+data/.lock
+data/items/*
+!data/items/.gitkeep
+!data/index.json
+tests/__pycache__/
+*.log

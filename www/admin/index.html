@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Curiosity Museum - Admin</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body class="page page-admin">
+    <div class="page-glow" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="site-mark" href="/">Curiosity Museum</a>
+      <nav class="site-nav">
+        <a href="/">Soumettre</a>
+        <a href="/museum/">Musee</a>
+        <a href="/admin/" aria-current="page">Admin</a>
+      </nav>
+    </header>
+
+    <main class="shell shell-admin">
+      <section class="admin-head panel">
+        <div>
+          <p class="eyebrow">Interface locale</p>
+          <h1>Administration de l'archive</h1>
+          <p class="lede">
+            Parcourez les contributions, telechargez les images source et rattachez un modele GLB
+            a chaque objet.
+          </p>
+        </div>
+        <div class="admin-toolbar">
+          <div class="stat-chip">
+            <span class="stat-label">Contributions</span>
+            <strong data-item-count>0</strong>
+          </div>
+          <label class="field compact admin-token-field">
+            <span>Token admin</span>
+            <input type="password" data-admin-token autocomplete="off" placeholder="Optionnel" />
+          </label>
+          <button class="button secondary" type="button" data-refresh>Actualiser</button>
+        </div>
+      </section>
+
+      <p class="status panel" data-admin-status hidden></p>
+
+      <section class="artifact-grid" data-admin-grid></section>
+    </main>
+
+    <template id="admin-card-template">
+      <article class="artifact-card panel">
+        <div class="artifact-image-wrap">
+          <img class="artifact-image" alt="" />
+          <span class="artifact-badge"></span>
+        </div>
+        <div class="artifact-card-body">
+          <div class="artifact-card-topline">
+            <p class="eyebrow artifact-date"></p>
+            <p class="artifact-code"></p>
+          </div>
+          <h2 class="artifact-title"></h2>
+          <p class="artifact-author"></p>
+          <p class="artifact-description"></p>
+          <div class="artifact-links">
+            <a class="text-link artifact-image-link" target="_blank" rel="noreferrer">Telecharger l'image</a>
+            <a class="text-link artifact-museum-link" target="_blank" rel="noreferrer">Voir dans le musee</a>
+          </div>
+          <form class="model-form">
+            <label class="field compact">
+              <span>Ajouter un GLB</span>
+              <input type="file" name="model" accept=".glb,model/gltf-binary" required />
+            </label>
+            <button class="button" type="submit">Televerser le modele</button>
+            <p class="status compact" hidden></p>
+          </form>
+        </div>
+      </article>
+    </template>
+
+    <script type="module" src="/assets/admin.js"></script>
+  </body>
+</html>
