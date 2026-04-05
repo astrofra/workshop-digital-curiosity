@@ -14,20 +14,28 @@ Frontend:
 - Displays objects in a swipeable ThreeJS interface
 
 Deployment:
-- Hosted on `curiosity.astrofra.com`
+- Hosted on `curiosity.astrofra.com` (user will do it)
 
 ---
 
 ## 🧱 Architecture Overview
 
+### 0. Constraints & guidelines
+- Static website for the frontend
+- No NodeJS
+- No build step requiring NodeJS
+- Frontend must be plain HTML / CSS / vanilla JS (except for ThreeJS)
+- Use PHP endpoints only where server-side behavior is required
+- Typical PHP use cases: file upload, item listing, item metadata retrieval, GLB upload
+
 ### 1. Frontend (Public)
 - Submission form (upload + metadata)
 - Museum viewer (ThreeJS swipe interface)
 
-### 2. Backend (Lightweight API)
+### 2. Backend (Lightweight API via PHP endpoints)
 - Handles uploads
-- Stores files + metadata
-- Provides API endpoints
+- Stores files + metadata on disk
+- Provides small PHP endpoints only when needed
 
 ### 3. Admin Interface
 - Lists submissions
@@ -66,17 +74,17 @@ Deployment:
 
 ## 🔌 API Design
 
-### POST /api/upload
+### POST /api/upload.php
 - Upload image + metadata
 - Creates new item folder
 
-### GET /api/items
+### GET /api/items.php
 - Returns index.json
 
-### GET /api/items/:id
+### GET /api/item.php?id=<id>
 - Returns meta.json
 
-### POST /api/items/:id/model
+### POST /api/upload-model.php?id=<id>
 - Upload GLB file
 - Updates has_model = true
 
@@ -93,7 +101,7 @@ Deployment:
 - Submit button
 
 ### Behavior
-- POST to /api/upload
+- POST to /api/upload.php
 - Show confirmation
 
 ---
@@ -150,12 +158,14 @@ Deployment:
 - ThreeJS
 
 ### Backend
-- Node.js (Express) or simple serverless (Vercel / Netlify functions)
-- File storage (local or S3-like)
+- PHP endpoints
+- Local file storage on disk
+- No NodeJS runtime
 
 ### Deployment
-- Static frontend → GitHub Pages or Vercel
-- API → Vercel / Render / Node server
+- Static HTML/CSS/JS pages plus a few PHP scripts
+- Requires a PHP-capable host for the upload and data endpoints
+- No Node server
 
 ---
 
@@ -222,4 +232,3 @@ This system acts as:
 - A **collective artifact generator**
 
 The imperfections of reconstruction are part of the meaning.
-
