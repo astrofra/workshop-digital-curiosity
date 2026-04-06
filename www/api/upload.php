@@ -16,11 +16,12 @@ handle_api(function (): void {
     $name = normalize_text($_POST['name'] ?? null, true, 120);
     $description = normalize_text($_POST['description'] ?? null, true, 512);
     $author = normalize_text($_POST['author'] ?? null, false, 120);
+    $fictionalDate = normalize_text($_POST['fictional_date'] ?? null, false, 120);
 
     $imageUpload = $_FILES['image'];
     $imageInfo = inspect_image_upload($imageUpload);
 
-    $result = with_mutation_lock(function () use ($participantId, $name, $description, $author, $imageUpload, $imageInfo): array {
+    $result = with_mutation_lock(function () use ($participantId, $name, $description, $author, $fictionalDate, $imageUpload, $imageInfo): array {
         $index = read_index();
 
         if (!in_array($participantId, configured_participant_codes(), true)) {
@@ -45,6 +46,7 @@ handle_api(function (): void {
             'name' => $name,
             'description' => $description,
             'author' => $author,
+            'fictional_date' => $fictionalDate,
             'created_at' => $now->format('Y-m-d'),
             'submitted_at' => $now->format(DateTimeInterface::ATOM),
             'has_model' => false,

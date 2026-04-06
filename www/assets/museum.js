@@ -191,7 +191,7 @@ function updateMeta(item, index, total, isFallback) {
   countElement.textContent = `${index + 1} / ${total}`;
   titleElement.textContent = item.name;
   authorElement.textContent = item.author ? `Par ${item.author}` : "auteur.ice inconnu.e";
-  createdElement.textContent = `Archivee le ${formatFrenchDate(item.created_at)}`;
+  createdElement.textContent = `Date ${item.fictional_date || formatFrenchDate(item.created_at)}`;
   stateElement.textContent = isFallback ? "Image source exposee en attendant le modele GLB" : "";
   stateElement.hidden = !isFallback;
   descriptionElement.textContent = item.description;

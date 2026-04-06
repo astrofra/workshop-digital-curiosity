@@ -168,6 +168,7 @@ def make_submission(base_url, participant_id, suffix=""):
             "name": f"Artefact {participant_id}{suffix}",
             "description": f"Description {participant_id}{suffix}",
             "author": "Testeur",
+            "fictional_date": f"An {participant_id}{suffix}",
         },
         files={"image": (f"image-{participant_id}.png", "image/png", PNG_BYTES)},
     )
@@ -208,6 +209,7 @@ def main():
             assert status == 201, payload
             item_id = payload["item"]["id"]
             assert payload["item"]["has_model"] is False, payload
+            assert payload["item"]["fictional_date"] == f"An {codes[0]}", payload
 
             status, payload = make_submission(base_url, "ABC1", "-invalid")
             assert status == 400, payload
@@ -316,6 +318,7 @@ def main():
             assert status == 200, payload
             assert len(payload["items"]) >= 6, payload
             assert all("participant_id" not in item for item in payload["items"]), payload
+            assert all("fictional_date" in item for item in payload["items"]), payload
             participant_names = [item["name"] for item in payload["items"]]
             assert "Artefact " + codes[0] + "-after-delete" in participant_names, payload
 

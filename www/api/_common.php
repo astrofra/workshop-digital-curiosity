@@ -496,6 +496,7 @@ function create_public_item(array $entry): array
         'name' => $entry['name'],
         'description' => $entry['description'],
         'author' => $entry['author'],
+        'fictional_date' => $entry['fictional_date'] ?? null,
         'created_at' => $entry['created_at'],
         'has_model' => (bool) $entry['has_model'],
         'image_url' => '/api/media.php?' . http_build_query(['id' => $entry['id'], 'kind' => 'image']),
