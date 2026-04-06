@@ -265,6 +265,29 @@ def main():
             )
             assert status == 400, payload
 
+            status, payload = request_json(
+                base_url,
+                "POST",
+                f"/api/delete-item.php?id={item_id}",
+            )
+            assert status == 200, payload
+            assert payload["item"]["id"] == item_id, payload
+
+            status, payload = get_json(base_url, "/api/items.php")
+            assert status == 200, payload
+            assert all(item["id"] != item_id for item in payload["items"]), payload
+
+            status, payload = request_json(
+                base_url,
+                "POST",
+                f"/api/delete-item.php?id={item_id}",
+            )
+            assert status == 404, payload
+
+            status, payload = make_submission(base_url, codes[0], "-after-delete")
+            assert status == 201, payload
+            item_id = payload["item"]["id"]
+
             with ThreadPoolExecutor(max_workers=4) as pool:
                 different_results = list(
                     pool.map(
@@ -294,7 +317,7 @@ def main():
             assert len(payload["items"]) >= 6, payload
             assert all("participant_id" not in item for item in payload["items"]), payload
             participant_names = [item["name"] for item in payload["items"]]
-            assert "Artefact " + codes[0] + "-replace-after-model" in participant_names, payload
+            assert "Artefact " + codes[0] + "-after-delete" in participant_names, payload
 
             status, payload = get_json(
                 base_url,

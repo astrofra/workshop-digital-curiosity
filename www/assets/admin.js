@@ -68,6 +68,40 @@ function renderItems(items) {
   grid.replaceChildren(...items.map(createCard));
 }
 
+async function deleteItem(card) {
+  const itemId = card.dataset.itemId;
+  const title = card.querySelector(".artifact-title")?.textContent?.trim() || "cet objet";
+
+  if (!window.confirm(`Supprimer definitivement "${title}" ?`)) {
+    return;
+  }
+
+  const deleteButton = card.querySelector(".artifact-delete-button");
+  const modelSubmitButton = card.querySelector('.model-form button[type="submit"]');
+  const modelStatus = card.querySelector(".model-form .status");
+
+  deleteButton.disabled = true;
+  if (modelSubmitButton) {
+    modelSubmitButton.disabled = true;
+  }
+  setStatus(modelStatus, "Suppression de l'objet...", "info");
+
+  try {
+    const response = await requestJson(buildApiUrl("delete-item.php", { id: itemId }), {
+      method: "POST"
+    });
+    setStatus(globalStatus, response.message || "Objet supprime.", "success");
+    await loadItems({ silent: true });
+  } catch (error) {
+    const message = error instanceof ApiError ? error.message : "Impossible de supprimer l'objet.";
+    setStatus(modelStatus, message, "error");
+    deleteButton.disabled = false;
+    if (modelSubmitButton) {
+      modelSubmitButton.disabled = false;
+    }
+  }
+}
+
 async function loadItems({ silent = false } = {}) {
   if (!silent) {
     setStatus(globalStatus, "Chargement des contributions...", "info");
@@ -130,6 +164,21 @@ grid.addEventListener("submit", async (event) => {
 
   event.preventDefault();
   await uploadModel(form);
+});
+
+grid.addEventListener("click", async (event) => {
+  const button = event.target.closest(".artifact-delete-button");
+
+  if (!button) {
+    return;
+  }
+
+  const card = button.closest(".artifact-card");
+  if (!card) {
+    return;
+  }
+
+  await deleteItem(card);
 });
 
 refreshButton.addEventListener("click", async () => {

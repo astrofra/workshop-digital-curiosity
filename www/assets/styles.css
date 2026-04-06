@@ -429,6 +429,11 @@ h3 {
   box-shadow: none;
 }
 
+.button.secondary.danger {
+  color: #ffd7cd;
+  border-color: rgba(241, 162, 139, 0.38);
+}
+
 strong,
 b {
   font-weight: 300;
@@ -695,17 +700,51 @@ b {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  transform: translateY(-50%) scale(1);
-  font-size: 2rem;
-  line-height: 1;
-  font-weight: 300;
-  background: rgba(18, 20, 24, 0.72);
-  backdrop-filter: blur(10px);
+  transform: translateY(-50%);
+  line-height: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
   color: var(--text);
 }
 
-.nav-button-edge:hover {
-  transform: translateY(-50%) scale(1.25);
+.nav-button-core {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(18, 20, 24, 0.72);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 14px 34px rgba(214, 163, 93, 0.24);
+  transform: scale(1);
+  transform-origin: 50% 50%;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.nav-button-edge:hover .nav-button-core {
+  transform: scale(1.25);
+}
+
+.nav-button-icon {
+  display: block;
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.nav-button-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.nav-button-icon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .nav-button-prev {
@@ -855,7 +894,10 @@ b {
     width: 100%;
     height: auto;
     min-height: 3rem;
-    font-size: 1.5rem;
+  }
+
+  .nav-button-core {
+    min-height: 3rem;
   }
 }
 

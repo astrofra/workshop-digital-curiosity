@@ -553,3 +553,22 @@ function public_item_or_404(string $itemId): array
 
     return $entry;
 }
+
+function delete_item_or_404(string $itemId): array
+{
+    return with_mutation_lock(function () use ($itemId): array {
+        $index = read_index();
+        $position = find_index_entry_position($index, $itemId);
+
+        if ($position < 0) {
+            abort_request(404, 'Objet introuvable.');
+        }
+
+        $entry = $index[$position];
+        array_splice($index, $position, 1);
+        write_json_atomic(index_path(), $index);
+        delete_tree(item_dir($itemId));
+
+        return $entry;
+    });
+}
