@@ -27,10 +27,14 @@ const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x1a1d20, 9, 20);
 
 const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
-camera.position.set(0, 2.35, 8.9);
+camera.position.set(0, 2.35, 8.0);
 
 const displayPivot = new THREE.Group();
 scene.add(displayPivot);
+
+const pendingPivot = new THREE.Group();
+pendingPivot.visible = false;
+scene.add(pendingPivot);
 
 const shadowCatcher = new THREE.Mesh(
   new THREE.CircleGeometry(1.5, 48),
@@ -97,6 +101,12 @@ const state = {
   activeBaseScale: null,
   activeScaleFactor: 1,
   activeResources: [],
+  activeFootprint: 1,
+  pendingRoot: null,
+  pendingIsFallback: false,
+  pendingBaseScale: null,
+  pendingResources: [],
+  pendingFootprint: 1,
   pointerInsideStage: false,
   isHoveringObject: false,
   loadToken: 0,
@@ -105,28 +115,25 @@ const state = {
   swipeMoved: false,
   spinStartAt: 0,
   spinDuration: 3000,
+  transition: null,
+  transitionDuration: 250,
+  transitionOffset: 2.4,
   refreshTimer: null
 };
 
-function trackResource(resource) {
-  state.activeResources.push(resource);
-}
-
-function disposeActiveResources() {
-  for (const resource of state.activeResources) {
+function disposeResources(resources) {
+  for (const resource of resources) {
     if (resource?.dispose) {
       resource.dispose();
     }
   }
-
-  state.activeResources = [];
 }
 
-function clearActiveObject() {
-  if (state.activeRoot) {
-    displayPivot.remove(state.activeRoot);
-    disposeActiveResources();
-    state.activeRoot.traverse((child) => {
+function disposeObject(root, resources, parent) {
+  if (root) {
+    parent.remove(root);
+    disposeResources(resources);
+    root.traverse((child) => {
       if (child.geometry) {
         child.geometry.dispose();
       }
@@ -138,17 +145,46 @@ function clearActiveObject() {
       }
     });
   }
+}
 
+function clearActiveObject() {
+  disposeObject(state.activeRoot, state.activeResources, displayPivot);
   state.activeRoot = null;
   state.activeBaseScale = null;
   state.activeScaleFactor = 1;
+  state.activeResources = [];
+  state.activeFootprint = 1;
   state.isHoveringObject = false;
   shadowCatcher.visible = false;
+}
+
+function clearPendingObject() {
+  disposeObject(state.pendingRoot, state.pendingResources, pendingPivot);
+  state.pendingRoot = null;
+  state.pendingIsFallback = false;
+  state.pendingBaseScale = null;
+  state.pendingResources = [];
+  state.pendingFootprint = 1;
+  pendingPivot.visible = false;
 }
 
 function setButtonsDisabled(disabled) {
   previousButton.disabled = disabled;
   nextButton.disabled = disabled;
+}
+
+function easeInQuad(value) {
+  return value * value;
+}
+
+function easeOutQuad(value) {
+  return 1 - (1 - value) * (1 - value);
+}
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 function updateMeta(item, index, total, isFallback) {
@@ -175,11 +211,12 @@ function fitObjectToStage(object, targetSize = 2.35) {
 
   object.scale.setScalar(scale);
   object.position.set(-center.x * scale, -center.y * scale + 1.42, -center.z * scale);
-  state.activeBaseScale = object.scale.clone();
-  state.activeScaleFactor = 1;
 
   const footprint = Math.max(size.x, size.z) * scale;
-  shadowCatcher.scale.setScalar(Math.max(0.9, footprint * 0.7));
+  return {
+    baseScale: object.scale.clone(),
+    footprint: Math.max(0.9, footprint * 0.7)
+  };
 }
 
 function interactiveObjectHitFromClient(clientX, clientY) {
@@ -225,10 +262,10 @@ function loadModel(url) {
   });
 }
 
-async function buildImageArtifact(imageUrl) {
+async function buildImageArtifact(imageUrl, resources) {
   const texture = await loadTexture(imageUrl);
   texture.colorSpace = THREE.SRGBColorSpace;
-  trackResource(texture);
+  resources.push(texture);
 
   const plane = new THREE.Mesh(
     new THREE.PlaneGeometry(2.2, 2.8),
@@ -244,7 +281,7 @@ async function buildImageArtifact(imageUrl) {
   return plane;
 }
 
-async function buildArtifact(item) {
+async function buildArtifact(item, resources) {
   if (item.has_model && item.model_url) {
     try {
       const object = await loadModel(item.model_url);
@@ -264,9 +301,55 @@ async function buildArtifact(item) {
   }
 
   return {
-    object: await buildImageArtifact(item.image_url),
+    object: await buildImageArtifact(item.image_url, resources),
     isFallback: true
   };
+}
+
+async function prepareArtifact(item) {
+  const resources = [];
+  const { object, isFallback } = await buildArtifact(item, resources);
+  const { baseScale, footprint } = fitObjectToStage(object);
+
+  return {
+    item,
+    object,
+    isFallback,
+    resources,
+    baseScale,
+    footprint
+  };
+}
+
+function activatePreparedArtifact(prepared, index) {
+  const isPendingObject = prepared.object === state.pendingRoot;
+  clearActiveObject();
+  if (isPendingObject) {
+    pendingPivot.remove(state.pendingRoot);
+    pendingPivot.visible = false;
+    state.pendingRoot = null;
+    state.pendingIsFallback = false;
+    state.pendingBaseScale = null;
+    state.pendingResources = [];
+    state.pendingFootprint = 1;
+  } else {
+    clearPendingObject();
+  }
+
+  displayPivot.rotation.set(0, 0, 0);
+  displayPivot.position.set(0, 0, 0);
+  displayPivot.add(prepared.object);
+  state.activeRoot = prepared.object;
+  state.activeBaseScale = prepared.baseScale;
+  state.activeScaleFactor = 1;
+  state.activeResources = prepared.resources;
+  state.activeFootprint = prepared.footprint;
+  state.spinStartAt = 0;
+  shadowCatcher.visible = true;
+  shadowCatcher.scale.setScalar(prepared.footprint);
+  state.index = index;
+  updateMeta(prepared.item, state.index, state.items.length, prepared.isFallback);
+  window.history.replaceState(null, "", `${window.location.pathname}#${prepared.item.id}`);
 }
 
 async function showItem(index) {
@@ -274,34 +357,22 @@ async function showItem(index) {
     return;
   }
 
-  state.index = (index + state.items.length) % state.items.length;
-  const item = state.items[state.index];
+  const nextIndex = (index + state.items.length) % state.items.length;
+  const item = state.items[nextIndex];
   const loadToken = ++state.loadToken;
   setButtonsDisabled(true);
   setStatus(statusElement, "Chargement de l'objet...", "info");
   setObjectLoaderVisible(true);
 
   try {
-    const { object, isFallback } = await buildArtifact(item);
+    const prepared = await prepareArtifact(item);
 
     if (loadToken !== state.loadToken) {
-      object.traverse((child) => {
-        child.geometry?.dispose?.();
-        child.material?.dispose?.();
-      });
+      disposeObject(prepared.object, prepared.resources, displayPivot);
       return;
     }
 
-    clearActiveObject();
-    fitObjectToStage(object);
-    displayPivot.rotation.set(0, 0, 0);
-    displayPivot.position.set(0, 0, 0);
-    displayPivot.add(object);
-    state.activeRoot = object;
-    state.spinStartAt = 0;
-    shadowCatcher.visible = true;
-    updateMeta(item, state.index, state.items.length, isFallback);
-    window.history.replaceState(null, "", `${window.location.pathname}#${item.id}`);
+    activatePreparedArtifact(prepared, nextIndex);
     setStatus(statusElement, "", "info");
   } catch (error) {
     console.error(error);
@@ -311,6 +382,87 @@ async function showItem(index) {
       "error"
     );
   } finally {
+    setObjectLoaderVisible(false);
+    setButtonsDisabled(state.items.length <= 1);
+  }
+}
+
+async function transitionToItem(index) {
+  if (!state.items.length || state.transition) {
+    return;
+  }
+
+  const nextIndex = (index + state.items.length) % state.items.length;
+  const direction = nextIndex === state.index ? 1 : (nextIndex > state.index || (state.index === state.items.length - 1 && nextIndex === 0) ? 1 : -1);
+  const item = state.items[nextIndex];
+  const loadToken = ++state.loadToken;
+
+  setButtonsDisabled(true);
+  setObjectLoaderVisible(true);
+  setStatus(statusElement, "Chargement de l'objet...", "info");
+
+  try {
+    const prepared = await prepareArtifact(item);
+
+    if (loadToken !== state.loadToken) {
+      disposeObject(prepared.object, prepared.resources, pendingPivot);
+      return;
+    }
+
+    clearPendingObject();
+    pendingPivot.add(prepared.object);
+    pendingPivot.visible = false;
+    state.pendingRoot = prepared.object;
+    state.pendingIsFallback = prepared.isFallback;
+    state.pendingBaseScale = prepared.baseScale;
+    state.pendingResources = prepared.resources;
+    state.pendingFootprint = prepared.footprint;
+
+    setObjectLoaderVisible(false);
+    state.transition = {
+      phase: "out",
+      direction,
+      startedAt: performance.now(),
+      nextIndex
+    };
+
+    await wait(state.transitionDuration);
+
+    if (loadToken !== state.loadToken) {
+      return;
+    }
+
+    state.transition = {
+      phase: "in",
+      direction,
+      startedAt: performance.now(),
+      nextIndex
+    };
+    activatePreparedArtifact(
+      {
+        item,
+        object: state.pendingRoot,
+        isFallback: state.pendingIsFallback,
+        resources: state.pendingResources,
+        baseScale: state.pendingBaseScale,
+        footprint: state.pendingFootprint
+      },
+      nextIndex
+    );
+    shadowCatcher.scale.setScalar(state.activeFootprint);
+    setStatus(statusElement, "", "info");
+
+    state.transition = {
+      phase: "in",
+      direction,
+      startedAt: performance.now(),
+      nextIndex
+    };
+
+    await wait(state.transitionDuration);
+  } finally {
+    state.transition = null;
+    clearPendingObject();
     setObjectLoaderVisible(false);
     setButtonsDisabled(state.items.length <= 1);
   }
@@ -381,11 +533,11 @@ async function loadItems({ silent = false } = {}) {
 }
 
 function navigate(step) {
-  if (!state.items.length) {
+  if (!state.items.length || state.transition) {
     return;
   }
 
-  showItem(state.index + step);
+  transitionToItem(state.index + step);
 }
 
 function handleSwipeStart(event) {
@@ -473,6 +625,7 @@ function animate() {
   requestAnimationFrame(animate);
 
   const time = performance.now() * 0.001;
+  let transitionOffsetX = 0;
 
   if (state.activeRoot) {
     const hoverTargetScale = state.pointerInsideStage && state.isHoveringObject ? 1.1 : 1;
@@ -498,11 +651,26 @@ function animate() {
     shadowCatcher.material.opacity = 0.11 - Math.sin(time * 1.15) * 0.018;
   }
 
+  if (state.transition) {
+    const progress = Math.min(1, (performance.now() - state.transition.startedAt) / state.transitionDuration);
+    const direction = state.transition.direction;
+
+    if (state.transition.phase === "out") {
+      transitionOffsetX = direction * state.transitionOffset * easeInQuad(progress);
+    } else if (state.transition.phase === "in") {
+      transitionOffsetX = -direction * state.transitionOffset * (1 - easeOutQuad(progress));
+    }
+  }
+
   const orbitAngle = Math.sin(time * 0.22) * 0.065;
   const orbitHeight = 2.25 + Math.sin(time * 0.17) * 0.12;
-  const orbitRadius = 8.9;
-  camera.position.set(Math.sin(orbitAngle) * orbitRadius, orbitHeight, Math.cos(orbitAngle) * orbitRadius);
-  camera.lookAt(0, 1.3, 0);
+  const orbitRadius = 8.0;
+  camera.position.set(
+    Math.sin(orbitAngle) * orbitRadius + transitionOffsetX,
+    orbitHeight,
+    Math.cos(orbitAngle) * orbitRadius
+  );
+  camera.lookAt(transitionOffsetX, 1.3, 0);
   renderer.render(scene, camera);
 }
 
