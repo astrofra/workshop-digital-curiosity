@@ -3,112 +3,58 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Curiosity Museum - Soumettre un artefact</title>
+    <title>Curiosity Museum - Musee</title>
     <link rel="stylesheet" href="/assets/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/vendor/three/three.module.js",
+          "three/addons/": "/vendor/three/examples/jsm/"
+        }
+      }
+    </script>
   </head>
-  <body class="page page-home">
+  <body class="page page-museum">
     <div class="page-glow" aria-hidden="true"></div>
     <header class="site-header">
       <a class="site-mark" href="/">Curiosity Museum</a>
-      <nav class="site-nav">
-        <a href="/" aria-current="page">Soumettre</a>
-        <a href="/museum/">Musee</a>
-        <a href="/admin/">Admin</a>
-      </nav>
     </header>
 
-    <main class="shell shell-home">
-      <section class="hero-panel panel">
-        <p class="eyebrow">Cabinet synthetique</p>
-        <h1>Deposez un fragment, laissez la machine imaginer l'objet.</h1>
-        <p class="lede">
-          Chaque participant televerse une image et quelques mots. L'archive produit ensuite
-          une reconstruction 3D, exposee dans le musee collectif.
-        </p>
-        <div class="hero-note">
-          <span>Workshop en simultane</span>
-          <span>1 code de 4 lettres = 1 contribution</span>
-          <span>Votre image reste visible avant le modele</span>
-        </div>
-      </section>
-
-      <section class="form-panel panel">
-        <div class="panel-heading">
-          <p class="eyebrow">Soumission</p>
-          <h2>Ajouter un artefact</h2>
-        </div>
-
-        <form class="artifact-form" data-upload-form novalidate>
-          <label class="field">
-            <span>Code participant</span>
-            <input
-              type="text"
-              name="participant_id"
-              maxlength="4"
-              minlength="4"
-              autocomplete="off"
-              spellcheck="false"
-              required
-              placeholder="ABCD"
-            />
-          </label>
-
-          <label class="field">
-            <span>Nom de l'objet</span>
-            <input type="text" name="name" maxlength="120" required placeholder="Relique oscillante" />
-          </label>
-
-          <label class="field">
-            <span>Description</span>
-            <textarea
-              name="description"
-              rows="5"
-              maxlength="1800"
-              required
-              placeholder="Decrivez la fonction, l'origine ou le pouvoir de l'objet."
-            ></textarea>
-          </label>
-
-          <label class="field">
-            <span>Auteur ou autrice (optionnel)</span>
-            <input type="text" name="author" maxlength="120" placeholder="Votre nom" />
-          </label>
-
-          <label class="field">
-            <span>Image source</span>
-            <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp,image/*" required />
-          </label>
-
-          <p class="status" data-form-status hidden></p>
-
-          <button class="button" type="submit">Envoyer au cabinet</button>
-        </form>
-
-        <div class="confirmation-card" data-confirmation hidden>
-          <p class="eyebrow">Archive mise a jour</p>
-          <h3>Contribution enregistree</h3>
-          <p data-confirmation-text></p>
-          <a class="text-link" href="/museum/">Voir le musee</a>
-        </div>
-      </section>
-
-      <aside class="preview-panel panel">
-        <div class="panel-heading">
-          <p class="eyebrow">Apercu</p>
-          <h2>Trace visuelle</h2>
-        </div>
-        <div class="preview-frame">
-          <img data-preview-image alt="Apercu de l'image televersee" hidden />
-          <div class="preview-empty" data-preview-empty>
-            <p>Votre image apparaitra ici avant d'entrer dans l'archive.</p>
+    <main class="shell shell-museum">
+      <section class="viewer-panel panel">
+        <div class="viewer-header">
+          <div>
+            <p class="eyebrow">Exposition</p>
+            <h1>Cabinet des curiosites reconstruites</h1>
+          </div>
+          <div class="viewer-actions">
+            <a class="button secondary" href="/submit">Ajouter un nouvel objet</a>
           </div>
         </div>
-        <p class="preview-caption">
-          Sans modele GLB, le musee exposera temporairement cette image comme artefact en attente.
-        </p>
-      </aside>
+
+        <div class="viewer-stage" data-viewer-stage>
+          <div class="viewer-loading" data-viewer-status>Chargement des artefacts...</div>
+          <div class="viewer-canvas" data-viewer-canvas></div>
+
+          <aside class="viewer-meta panel">
+            <p class="eyebrow" data-viewer-count>0 / 0</p>
+            <h2 data-viewer-title>Archive vide</h2>
+            <p class="viewer-meta-line" data-viewer-author></p>
+            <p class="viewer-meta-line" data-viewer-created></p>
+            <p class="viewer-meta-state" data-viewer-state></p>
+            <p class="viewer-description" data-viewer-description>
+              Aucune contribution n'est encore disponible.
+            </p>
+          </aside>
+
+          <div class="viewer-nav">
+            <button class="nav-button" type="button" data-prev aria-label="Objet precedent">Precedent</button>
+            <button class="nav-button" type="button" data-next aria-label="Objet suivant">Suivant</button>
+          </div>
+        </div>
+      </section>
     </main>
 
-    <script type="module" src="/assets/submission.js"></script>
+    <script type="module" src="/assets/museum.js"></script>
   </body>
 </html>

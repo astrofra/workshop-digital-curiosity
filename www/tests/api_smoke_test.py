@@ -196,18 +196,27 @@ def main():
         try:
             wait_for_server(base_url)
 
+            status, _ = get_text(base_url, "/")
+            assert status == 200, status
+
+            status, _ = get_text(base_url, "/submit/")
+            assert status == 200, status
+
             status, _ = get_text(base_url, "/admin/")
             assert status == 200, status
 
             status, payload = make_submission(base_url, codes[0])
             assert status == 201, payload
             item_id = payload["item"]["id"]
+            assert payload["item"]["has_model"] is False, payload
 
             status, payload = make_submission(base_url, "ABC1", "-invalid")
             assert status == 400, payload
 
-            status, payload = make_submission(base_url, codes[0], "-duplicate")
-            assert status == 409, payload
+            status, payload = make_submission(base_url, codes[0], "-replace")
+            assert status == 200, payload
+            assert payload["item"]["id"] == item_id, payload
+            assert payload["item"]["has_model"] is False, payload
 
             status, payload = make_submission(base_url, unknown_code, "-unknown-code")
             assert status == 403, payload
@@ -243,6 +252,12 @@ def main():
             assert media_headers["Content-Disposition"].startswith("attachment;"), media_headers
             assert "model.glb" in media_headers["Content-Disposition"], media_headers
 
+            status, payload = make_submission(base_url, codes[0], "-replace-after-model")
+            assert status == 200, payload
+            assert payload["item"]["id"] == item_id, payload
+            assert payload["item"]["has_model"] is False, payload
+            assert payload["item"]["model_url"] is None, payload
+
             status, payload = request_json(
                 base_url,
                 "POST",
@@ -274,12 +289,14 @@ def main():
                     )
                 )
             status_codes = sorted(status for status, _ in same_results)
-            assert status_codes == [201, 409], same_results
+            assert status_codes == [200, 201], same_results
 
             status, payload = get_json(base_url, "/api/items.php")
             assert status == 200, payload
             assert len(payload["items"]) >= 6, payload
             assert all("participant_id" not in item for item in payload["items"]), payload
+            participant_names = [item["name"] for item in payload["items"]]
+            assert "Artefact " + codes[0] + "-replace-after-model" in participant_names, payload
 
             status, payload = get_json(
                 base_url,
@@ -288,11 +305,16 @@ def main():
             )
             assert status == 200, payload
             assert all("participant_id" in item for item in payload["items"]), payload
+            participant_ids = [item["participant_id"] for item in payload["items"]]
+            assert participant_ids.count(codes[0]) == 1, payload
+            assert participant_ids.count(codes[6]) == 1, payload
 
             index_path = Path(temp_dir) / "data" / "index.json"
             index_data = json.loads(index_path.read_text())
             assert isinstance(index_data, list), index_data
             assert all("participant_id" in item for item in index_data), index_data
+            assert sum(1 for item in index_data if item["participant_id"] == codes[0]) == 1, index_data
+            assert sum(1 for item in index_data if item["participant_id"] == codes[6]) == 1, index_data
 
             print("API smoke tests passed.")
         finally:

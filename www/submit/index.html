@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Curiosity Museum - Soumettre un artefact</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body class="page page-home">
+    <div class="page-glow" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="site-mark" href="/">Curiosity Museum</a>
+    </header>
+
+    <main class="shell shell-home">
+      <section class="hero-panel panel">
+        <div class="submit-hero-layout">
+          <div class="submit-hero-copy">
+            <p class="eyebrow">Cabinet synthetique</p>
+            <h1 class="submit-hero-title">Deposez un fragment, laissez la machine imaginer l'objet.</h1>
+            <p class="lede">
+              Chaque participant televerse une image et quelques mots. L'archive produit ensuite
+              une reconstruction 3D, exposee dans le musee collectif.
+            </p>
+            <div class="hero-note">
+              <span>Workshop en simultane</span>
+              <span>1 code de 4 lettres = contributions remplacables</span>
+              <span>Votre image reste visible avant le modele</span>
+            </div>
+          </div>
+
+          <figure class="submit-hero-figure" aria-hidden="true">
+            <img src="/assets/img/cabinet-hero.png" alt="" />
+          </figure>
+        </div>
+      </section>
+
+      <section class="form-panel panel">
+        <div class="panel-heading">
+          <p class="eyebrow">Soumission</p>
+          <h2>Ajouter un artefact</h2>
+        </div>
+
+        <form class="artifact-form" data-upload-form novalidate>
+          <label class="field">
+            <span>Code participant</span>
+            <input
+              type="text"
+              name="participant_id"
+              maxlength="4"
+              minlength="4"
+              autocomplete="off"
+              spellcheck="false"
+              required
+              placeholder="ABCD"
+            />
+          </label>
+
+          <label class="field">
+            <span>Nom de l'objet</span>
+            <input type="text" name="name" maxlength="120" required placeholder="Relique oscillante" />
+          </label>
+
+          <label class="field">
+            <span>Description</span>
+            <textarea
+              name="description"
+              rows="5"
+              maxlength="1800"
+              required
+              placeholder="Decrivez la fonction, l'origine ou le pouvoir de l'objet."
+            ></textarea>
+          </label>
+
+          <label class="field">
+            <span>Auteur ou autrice (optionnel)</span>
+            <input type="text" name="author" maxlength="120" placeholder="Votre nom" />
+          </label>
+
+          <label class="field">
+            <span>Image source</span>
+            <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp,image/*" required />
+          </label>
+
+          <p class="status" data-form-status hidden></p>
+
+          <button class="button" type="submit">Envoyer au cabinet</button>
+        </form>
+
+        <div class="confirmation-card" data-confirmation hidden>
+          <p class="eyebrow">Archive mise a jour</p>
+          <h3>Contribution enregistree</h3>
+          <p data-confirmation-text></p>
+          <a class="text-link" href="/">Voir le musee</a>
+        </div>
+      </section>
+
+      <aside class="preview-panel panel">
+        <div class="panel-heading">
+          <p class="eyebrow">Apercu</p>
+          <h2>Trace visuelle</h2>
+        </div>
+        <div class="preview-frame">
+          <img data-preview-image alt="Apercu de l'image televersee" hidden />
+          <div class="preview-empty" data-preview-empty>
+            <p>Votre image apparaitra ici avant d'entrer dans l'archive.</p>
+          </div>
+        </div>
+        <p class="preview-caption">
+          Sans modele GLB, le musee exposera temporairement cette image comme artefact en attente.
+        </p>
+      </aside>
+    </main>
+
+    <script type="module" src="/assets/submission.js"></script>
+  </body>
+</html>

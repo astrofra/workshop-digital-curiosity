@@ -54,7 +54,7 @@ function createCard(item) {
   node.querySelector(".artifact-author").innerHTML = authorLabel;
   node.querySelector(".artifact-description").textContent = item.description;
   node.querySelector(".artifact-image-link").href = item.image_url;
-  node.querySelector(".artifact-museum-link").href = `/museum/#${item.id}`;
+  node.querySelector(".artifact-museum-link").href = `/#${item.id}`;
 
   const form = node.querySelector(".model-form");
   form.dataset.itemId = item.id;

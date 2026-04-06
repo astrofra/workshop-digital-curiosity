@@ -552,6 +552,17 @@ function find_index_entry_position(array $index, string $itemId): int
     return -1;
 }
 
+function find_index_entry_position_by_participant(array $index, string $participantId): int
+{
+    foreach ($index as $position => $entry) {
+        if (($entry['participant_id'] ?? null) === $participantId) {
+            return $position;
+        }
+    }
+
+    return -1;
+}
+
 function public_item_or_404(string $itemId): array
 {
     $entry = find_index_entry(read_index(), $itemId);

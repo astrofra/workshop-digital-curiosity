@@ -20,24 +20,21 @@ handle_api(function (): void {
     $imageUpload = $_FILES['image'];
     $imageInfo = inspect_image_upload($imageUpload);
 
-    $entry = with_mutation_lock(function () use ($participantId, $name, $description, $author, $imageUpload, $imageInfo): array {
+    $result = with_mutation_lock(function () use ($participantId, $name, $description, $author, $imageUpload, $imageInfo): array {
         $index = read_index();
 
         if (!in_array($participantId, configured_participant_codes(), true)) {
             abort_request(403, 'Ce code participant n est pas autorise.');
         }
 
-        foreach ($index as $existingEntry) {
-            if (($existingEntry['participant_id'] ?? null) === $participantId) {
-                abort_request(409, 'Ce code participant a deja ete utilise.');
-            }
-        }
-
-        $itemId = create_unique_item_id($index);
+        $existingPosition = find_index_entry_position_by_participant($index, $participantId);
+        $existingEntry = $existingPosition >= 0 ? $index[$existingPosition] : null;
+        $itemId = is_array($existingEntry) ? (string) $existingEntry['id'] : create_unique_item_id($index);
         $directory = item_dir($itemId);
+        $stagedImagePath = $directory . '/image.uploading';
         $imagePath = $directory . '/' . $imageInfo['filename'];
 
-        if (!mkdir($directory, 0775, false) && !is_dir($directory)) {
+        if (!is_dir($directory) && !mkdir($directory, 0775, false) && !is_dir($directory)) {
             throw new RuntimeException('Impossible de creer le dossier de l objet.');
         }
 
@@ -58,19 +55,42 @@ handle_api(function (): void {
         ];
 
         try {
-            move_uploaded_file_to($imageUpload, $imagePath);
+            move_uploaded_file_to($imageUpload, $stagedImagePath);
+
+            foreach (scandir($directory) ?: [] as $entryName) {
+                if ($entryName === '.' || $entryName === '..' || $entryName === 'image.uploading') {
+                    continue;
+                }
+
+                delete_tree($directory . '/' . $entryName);
+            }
+
+            if (!@rename($stagedImagePath, $imagePath)) {
+                @unlink($stagedImagePath);
+                throw new RuntimeException('Impossible de finaliser l image televersee.');
+            }
+
             write_item_meta($itemId, $entry);
+            if ($existingPosition >= 0) {
+                array_splice($index, $existingPosition, 1);
+            }
             array_unshift($index, $entry);
             write_json_atomic(index_path(), $index);
-            return $entry;
+            return [
+                'entry' => $entry,
+                'created' => $existingEntry === null,
+            ];
         } catch (Throwable $exception) {
-            delete_tree($directory);
+            @unlink($stagedImagePath);
+            if ($existingEntry === null) {
+                delete_tree($directory);
+            }
             throw $exception;
         }
     });
 
-    json_response(201, [
-        'item' => create_public_item($entry),
-        'message' => 'Contribution enregistree.',
+    json_response($result['created'] ? 201 : 200, [
+        'item' => create_public_item($result['entry']),
+        'message' => $result['created'] ? 'Contribution enregistree.' : 'Contribution remplacee.',
     ]);
 });

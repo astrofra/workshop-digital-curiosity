@@ -60,9 +60,9 @@ form.addEventListener("submit", async (event) => {
 
     form.reset();
     resetPreview();
-    confirmationText.textContent = `L'objet "${response.item.name}" a ete archive. Vous pourrez bientot le retrouver dans le musee.`;
+    confirmationText.textContent = `${response.message} L'objet "${response.item.name}" est visible dans le musee.`;
     confirmationCard.hidden = false;
-    setStatus(statusElement, "Contribution envoyee avec succes.", "success");
+    setStatus(statusElement, response.message || "Contribution envoyee avec succes.", "success");
   } catch (error) {
     const message = error instanceof ApiError ? error.message : "Impossible d'envoyer la contribution.";
     setStatus(statusElement, message, "error");
