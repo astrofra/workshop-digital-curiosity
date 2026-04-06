@@ -148,8 +148,10 @@ textarea {
 }
 
 .page-home .hero-panel {
+  grid-column: 1 / -1;
   position: relative;
   overflow: hidden;
+  padding: 1.55rem 1.55rem 1.35rem;
   background:
     radial-gradient(circle at top right, rgba(214, 163, 93, 0.14), transparent 34%),
     linear-gradient(160deg, rgba(255, 255, 255, 0.04), transparent 55%),
@@ -231,39 +233,53 @@ h3 {
   padding: 0.55rem 0.95rem;
 }
 
-.submit-hero-layout {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
-  gap: 1.15rem;
-  align-items: end;
+.page-home .shell-home {
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
 }
 
-.submit-hero-copy {
+.submit-hero-layout {
   position: relative;
   z-index: 1;
+  display: grid;
+  grid-template-columns: 0.4fr 0.6fr;
+  grid-template-areas:
+    "title title"
+    "lede figure";
+  gap: 1rem 1rem;
+  align-items: stretch;
 }
 
 .submit-hero-title {
-  font-size: clamp(1.075rem, 2.15vw, 2.15rem);
+  grid-area: title;
+  max-width: none;
+  margin-bottom: 0.35rem;
+  font-size: clamp(2.2rem, 4.2vw, 3.85rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
 }
 
 .page-home h2 {
   font-size: clamp(1.8rem, 2.8vw, 2.6rem);
 }
 
-.page-home .lede {
-  max-width: 34rem;
-  font-size: 1.02rem;
+.submit-hero-lede {
+  grid-area: lede;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  font-size: clamp(1.02rem, 1.5vw, 1.34rem);
+  line-height: 1.14;
 }
 
 .submit-hero-figure {
+  grid-area: figure;
   position: relative;
   margin: 0;
-  align-self: center;
-  justify-self: end;
-  width: min(100%, 240px);
-  padding: 1rem;
+  align-self: end;
+  justify-self: center;
+  width: 75%;
+  max-width: 330px;
+  padding: 0.85rem;
   border-radius: 28px;
   border: 1px solid rgba(214, 163, 93, 0.24);
   background:
@@ -487,10 +503,6 @@ b {
   align-items: center;
 }
 
-.admin-token-field {
-  min-width: 220px;
-}
-
 .stat-chip {
   display: grid;
   gap: 0.15rem;
@@ -659,8 +671,13 @@ b {
     grid-template-columns: 1fr 1fr;
   }
 
+  .page-home .shell-home {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .submit-hero-layout {
-    grid-template-columns: minmax(0, 1fr) 190px;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 1.2rem;
   }
 
   .preview-panel {
@@ -680,13 +697,22 @@ b {
     grid-template-columns: 1fr;
   }
 
+  .page-home .shell-home {
+    grid-template-columns: 1fr;
+  }
+
   .submit-hero-layout {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "title"
+      "lede"
+      "figure";
+    gap: 1rem;
   }
 
   .submit-hero-figure {
     justify-self: start;
-    width: min(58vw, 220px);
+    width: min(100%, 320px);
   }
 
   .preview-panel {
@@ -730,14 +756,16 @@ b {
   }
 
   .submit-hero-title {
-    font-size: clamp(0.98rem, 4.5vw, 1.4rem);
+    max-width: none;
+    font-size: clamp(2rem, 8.5vw, 3.15rem);
   }
 
   .page-home h2 {
     font-size: clamp(1.5rem, 7vw, 2.05rem);
   }
 
-  .page-home .lede {
+  .submit-hero-lede {
+    max-width: none;
     font-size: 0.96rem;
   }
 

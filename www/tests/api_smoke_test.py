@@ -182,7 +182,6 @@ def main():
         base_url = f"http://127.0.0.1:{port}"
         env = os.environ.copy()
         env["CURIOSITY_DATA_DIR"] = str(Path(temp_dir) / "data")
-        env["CURIOSITY_ADMIN_TOKEN"] = "secret-token"
 
         server_command = [part.format(port=port) for part in choose_server_command()]
         process = subprocess.Popen(
@@ -235,14 +234,14 @@ def main():
             assert status == 400, payload
 
             status, payload = get_json(base_url, "/api/admin-items.php")
-            assert status == 401, payload
+            assert status == 200, payload
+            assert isinstance(payload["items"], list), payload
 
             status, payload = request_json(
                 base_url,
                 "POST",
                 f"/api/upload-model.php?id={item_id}",
                 files={"model": ("model.glb", "model/gltf-binary", GLB_BYTES)},
-                headers={"X-Admin-Token": "secret-token"},
             )
             assert status == 200, payload
             assert payload["item"]["has_model"] is True, payload
@@ -263,7 +262,6 @@ def main():
                 "POST",
                 f"/api/upload-model.php?id={item_id}",
                 files={"model": ("model.txt", "text/plain", b"not glb")},
-                headers={"X-Admin-Token": "secret-token"},
             )
             assert status == 400, payload
 
@@ -301,7 +299,6 @@ def main():
             status, payload = get_json(
                 base_url,
                 "/api/admin-items.php",
-                headers={"X-Admin-Token": "secret-token"},
             )
             assert status == 200, payload
             assert all("participant_id" in item for item in payload["items"]), payload

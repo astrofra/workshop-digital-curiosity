@@ -65,12 +65,6 @@ function meta_path(string $itemId): string
     return item_dir($itemId) . '/meta.json';
 }
 
-function admin_token(): string
-{
-    $token = getenv('CURIOSITY_ADMIN_TOKEN');
-    return is_string($token) ? trim($token) : '';
-}
-
 function participant_codes_path(): string
 {
     return config_dir() . '/participant_codes.php';
@@ -141,19 +135,6 @@ function require_method(string $expected): void
     $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
     if ($method !== strtoupper($expected)) {
         abort_request(405, 'Methode non autorisee.');
-    }
-}
-
-function require_admin_auth(): void
-{
-    $expectedToken = admin_token();
-    if ($expectedToken === '') {
-        return;
-    }
-
-    $providedToken = trim((string) ($_SERVER['HTTP_X_ADMIN_TOKEN'] ?? $_POST['admin_token'] ?? $_GET['admin_token'] ?? ''));
-    if (!hash_equals($expectedToken, $providedToken)) {
-        abort_request(401, 'Acces admin refuse.');
     }
 }
 

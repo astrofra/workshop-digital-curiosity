@@ -7,27 +7,13 @@ import {
   setStatus
 } from "/assets/common.js";
 
-const TOKEN_STORAGE_KEY = "curiosity-admin-token";
-
 const grid = document.querySelector("[data-admin-grid]");
 const globalStatus = document.querySelector("[data-admin-status]");
 const itemCount = document.querySelector("[data-item-count]");
 const refreshButton = document.querySelector("[data-refresh]");
-const tokenInput = document.querySelector("[data-admin-token]");
 const template = document.querySelector("#admin-card-template");
 
 let refreshTimer = null;
-
-function adminHeaders() {
-  const token = tokenInput.value.trim();
-  const headers = {};
-
-  if (token) {
-    headers["X-Admin-Token"] = token;
-  }
-
-  return headers;
-}
 
 function renderEmptyState() {
   grid.innerHTML = `
@@ -88,9 +74,7 @@ async function loadItems({ silent = false } = {}) {
   }
 
   try {
-    const response = await requestJson(buildApiUrl("admin-items.php"), {
-      headers: adminHeaders()
-    });
+    const response = await requestJson(buildApiUrl("admin-items.php"));
     renderItems(response.items);
 
     if (!silent) {
@@ -122,8 +106,7 @@ async function uploadModel(form) {
   try {
     await requestJson(buildApiUrl("upload-model.php", { id: form.dataset.itemId }), {
       method: "POST",
-      body: payload,
-      headers: adminHeaders()
+      body: payload
     });
 
     setStatus(status, "Modele ajoute avec succes.", "success");
@@ -153,10 +136,6 @@ refreshButton.addEventListener("click", async () => {
   await loadItems();
 });
 
-tokenInput.addEventListener("input", () => {
-  window.localStorage.setItem(TOKEN_STORAGE_KEY, tokenInput.value);
-});
-
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     loadItems({ silent: true });
@@ -173,5 +152,4 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
-tokenInput.value = window.localStorage.getItem(TOKEN_STORAGE_KEY) ?? "";
 loadItems();

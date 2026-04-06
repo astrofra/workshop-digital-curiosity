@@ -5,7 +5,6 @@ require_once __DIR__ . '/_common.php';
 
 handle_api(function (): void {
     require_method('POST');
-    require_admin_auth();
 
     if (!isset($_FILES['model']) || !is_array($_FILES['model'])) {
         abort_request(400, 'Veuillez joindre un fichier GLB.');
