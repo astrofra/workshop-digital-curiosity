@@ -89,7 +89,8 @@ const state = {
   activeResources: [],
   lastInteractionAt: 0,
   loadToken: 0,
-  swipeStart: null
+  swipeStart: null,
+  refreshTimer: null
 };
 
 function trackResource(resource) {
@@ -315,12 +316,26 @@ function resizeRenderer() {
   camera.updateProjectionMatrix();
 }
 
-async function loadItems() {
-  setStatus(statusElement, "Chargement des artefacts...", "info");
+function itemIds(items) {
+  return items.map((item) => item.id).join("|");
+}
+
+function activeItemId() {
+  return state.items[state.index]?.id ?? window.location.hash.replace(/^#/, "");
+}
+
+async function loadItems({ silent = false } = {}) {
+  if (!silent) {
+    setStatus(statusElement, "Chargement des artefacts...", "info");
+  }
 
   try {
     const response = await requestJson(buildApiUrl("items.php"));
-    state.items = response.items;
+    const nextItems = response.items;
+    const idsChanged = itemIds(nextItems) !== itemIds(state.items);
+    const shouldRefreshView = idsChanged || !state.activeRoot;
+
+    state.items = nextItems;
 
     if (!state.items.length) {
       countElement.textContent = "0 / 0";
@@ -330,12 +345,22 @@ async function loadItems() {
       stateElement.textContent = "Aucune contribution n'est encore visible.";
       descriptionElement.textContent = "Invitez les participant(e)s a soumettre une image pour lancer l'exposition.";
       setButtonsDisabled(true);
-      setStatus(statusElement, "Le musee attend sa premiere contribution.", "info");
+      if (!silent || !state.activeRoot) {
+        setStatus(statusElement, "Le musee attend sa premiere contribution.", "info");
+      }
+      clearActiveObject();
       return;
     }
 
-    const hashId = window.location.hash.replace(/^#/, "");
-    const startIndex = state.items.findIndex((item) => item.id === hashId);
+    if (!shouldRefreshView) {
+      if (!silent) {
+        setStatus(statusElement, "", "info");
+      }
+      return;
+    }
+
+    const preferredId = activeItemId();
+    const startIndex = state.items.findIndex((item) => item.id === preferredId);
     await showItem(startIndex >= 0 ? startIndex : 0);
   } catch (error) {
     setStatus(
@@ -397,6 +422,18 @@ window.addEventListener("keydown", (event) => {
   }
 });
 
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    loadItems({ silent: true });
+  }
+});
+
+window.addEventListener("beforeunload", () => {
+  if (state.refreshTimer) {
+    window.clearInterval(state.refreshTimer);
+  }
+});
+
 window.addEventListener("resize", resizeRenderer);
 
 function animate() {
@@ -412,4 +449,7 @@ function animate() {
 
 resizeRenderer();
 loadItems();
+state.refreshTimer = window.setInterval(() => {
+  loadItems({ silent: true });
+}, 15000);
 animate();
