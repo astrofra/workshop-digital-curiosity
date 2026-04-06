@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Curiosity Museum - Musee</title>
+    <title>Cabinet of Curiosities - New Images Festival</title>
     <link rel="stylesheet" href="/assets/styles.css" />
     <script type="importmap">
       {
@@ -17,7 +17,7 @@
   <body class="page page-museum">
     <div class="page-glow" aria-hidden="true"></div>
     <header class="site-header">
-      <a class="site-mark" href="/">Curiosity Museum</a>
+      <a class="site-mark" href="/">New Images Festival</a>
     </header>
 
     <main class="shell shell-museum">
@@ -25,16 +25,20 @@
         <div class="viewer-header">
           <div>
             <p class="eyebrow">Exposition</p>
-            <h1>Cabinet des curiosites reconstruites</h1>
-          </div>
-          <div class="viewer-actions">
-            <a class="button secondary" href="/submit">Ajouter un nouvel objet</a>
+            <h1>Cabinet de curiosites</h1>
           </div>
         </div>
 
         <div class="viewer-stage" data-viewer-stage>
           <div class="viewer-loading" data-viewer-status>Chargement des artefacts...</div>
           <div class="viewer-canvas" data-viewer-canvas></div>
+
+          <button class="nav-button nav-button-edge nav-button-prev" type="button" data-prev aria-label="Objet precedent">
+            &lt;
+          </button>
+          <button class="nav-button nav-button-edge nav-button-next" type="button" data-next aria-label="Objet suivant">
+            &gt;
+          </button>
 
           <aside class="viewer-meta panel">
             <p class="eyebrow" data-viewer-count>0 / 0</p>
@@ -47,10 +51,6 @@
             </p>
           </aside>
 
-          <div class="viewer-nav">
-            <button class="nav-button" type="button" data-prev aria-label="Objet precedent">Precedent</button>
-            <button class="nav-button" type="button" data-next aria-label="Objet suivant">Suivant</button>
-          </div>
         </div>
       </section>
     </main>

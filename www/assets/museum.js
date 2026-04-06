@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 import { ApiError, buildApiUrl, formatFrenchDate, requestJson, setStatus } from "/assets/common.js";
@@ -27,18 +26,24 @@ const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x1a1d20, 9, 20);
 
 const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
-camera.position.set(0, 2.1, 6.8);
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enablePan = false;
-controls.enableZoom = true;
-controls.enableDamping = true;
-controls.minDistance = 3.2;
-controls.maxDistance = 10;
-controls.target.set(0, 1.2, 0);
+camera.position.set(0, 2.2, 6.4);
 
 const displayPivot = new THREE.Group();
 scene.add(displayPivot);
+
+const shadowCatcher = new THREE.Mesh(
+  new THREE.CircleGeometry(1.5, 48),
+  new THREE.MeshBasicMaterial({
+    color: 0x000000,
+    transparent: true,
+    opacity: 0.13,
+    depthWrite: false
+  })
+);
+shadowCatcher.rotation.x = -Math.PI / 2;
+shadowCatcher.position.y = 0.04;
+shadowCatcher.visible = false;
+scene.add(shadowCatcher);
 
 const ambientLight = new THREE.AmbientLight(0xece5d8, 0.35);
 scene.add(ambientLight);
@@ -87,9 +92,9 @@ const state = {
   index: 0,
   activeRoot: null,
   activeResources: [],
-  lastInteractionAt: 0,
   loadToken: 0,
   swipeStart: null,
+  swipePointerId: null,
   refreshTimer: null
 };
 
@@ -125,6 +130,7 @@ function clearActiveObject() {
   }
 
   state.activeRoot = null;
+  shadowCatcher.visible = false;
 }
 
 function setButtonsDisabled(disabled) {
@@ -151,23 +157,10 @@ function fitObjectToStage(object, targetSize = 3.2) {
   const scale = targetSize / maxDimension;
 
   object.scale.setScalar(scale);
-  object.position.set(-center.x * scale, -box.min.y * scale + 0.02, -center.z * scale);
-}
+  object.position.set(-center.x * scale, -center.y * scale + 1.55, -center.z * scale);
 
-function createPedestal() {
-  const pedestal = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.05, 1.25, 0.32, 40),
-    new THREE.MeshStandardMaterial({
-      color: 0x766e61,
-      roughness: 0.92,
-      metalness: 0.03
-    })
-  );
-
-  pedestal.position.y = 0.16;
-  pedestal.receiveShadow = true;
-  pedestal.castShadow = true;
-  return pedestal;
+  const footprint = Math.max(size.x, size.z) * scale;
+  shadowCatcher.scale.setScalar(Math.max(0.9, footprint * 0.7));
 }
 
 function loadTexture(url) {
@@ -197,49 +190,18 @@ async function buildImageArtifact(imageUrl) {
   texture.colorSpace = THREE.SRGBColorSpace;
   trackResource(texture);
 
-  const group = new THREE.Group();
-  const pedestal = createPedestal();
-  group.add(pedestal);
-
   const plane = new THREE.Mesh(
     new THREE.PlaneGeometry(2.2, 2.8),
     new THREE.MeshStandardMaterial({
       map: texture,
       side: THREE.DoubleSide,
+      transparent: true,
       roughness: 0.86,
       metalness: 0.02
     })
   );
-  plane.position.set(0, 1.82, 0);
   plane.castShadow = true;
-  group.add(plane);
-
-  const frame = new THREE.Mesh(
-    new THREE.BoxGeometry(2.42, 3.02, 0.08),
-    new THREE.MeshStandardMaterial({
-      color: 0x8f7043,
-      roughness: 0.45,
-      metalness: 0.18
-    })
-  );
-  frame.position.set(0, 1.82, -0.05);
-  frame.castShadow = true;
-  frame.receiveShadow = true;
-  group.add(frame);
-
-  const caption = new THREE.Mesh(
-    new THREE.BoxGeometry(1.1, 0.12, 0.65),
-    new THREE.MeshStandardMaterial({
-      color: 0xd0c1a4,
-      roughness: 0.72,
-      metalness: 0.02
-    })
-  );
-  caption.position.set(0, 0.66, 0.32);
-  caption.castShadow = true;
-  group.add(caption);
-
-  return group;
+  return plane;
 }
 
 async function buildArtifact(item) {
@@ -292,8 +254,10 @@ async function showItem(index) {
     clearActiveObject();
     fitObjectToStage(object);
     displayPivot.rotation.set(0, 0, 0);
+    displayPivot.position.set(0, 0, 0);
     displayPivot.add(object);
     state.activeRoot = object;
+    shadowCatcher.visible = true;
     updateMeta(item, state.index, state.items.length, isFallback);
     window.history.replaceState(null, "", `${window.location.pathname}#${item.id}`);
     setStatus(statusElement, "", "info");
@@ -381,38 +345,38 @@ function navigate(step) {
 }
 
 function handleSwipeStart(event) {
-  const touch = event.changedTouches[0];
-  state.swipeStart = { x: touch.clientX, y: touch.clientY };
-}
-
-function handleSwipeEnd(event) {
-  if (!state.swipeStart) {
+  if (event.target.closest("button, a")) {
     return;
   }
 
-  const touch = event.changedTouches[0];
-  const deltaX = touch.clientX - state.swipeStart.x;
-  const deltaY = touch.clientY - state.swipeStart.y;
+  state.swipePointerId = event.pointerId;
+  state.swipeStart = { x: event.clientX, y: event.clientY };
+}
+
+function handleSwipeEnd(event) {
+  if (!state.swipeStart || event.pointerId !== state.swipePointerId) {
+    return;
+  }
+
+  const deltaX = event.clientX - state.swipeStart.x;
+  const deltaY = event.clientY - state.swipeStart.y;
   state.swipeStart = null;
+  state.swipePointerId = null;
 
   if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY)) {
     navigate(deltaX > 0 ? -1 : 1);
   }
 }
 
-controls.addEventListener("start", () => {
-  state.lastInteractionAt = Date.now();
-});
-
-controls.addEventListener("end", () => {
-  state.lastInteractionAt = Date.now();
-});
-
 previousButton.addEventListener("click", () => navigate(-1));
 nextButton.addEventListener("click", () => navigate(1));
 
-stage.addEventListener("touchstart", handleSwipeStart, { passive: true });
-stage.addEventListener("touchend", handleSwipeEnd, { passive: true });
+stage.addEventListener("pointerdown", handleSwipeStart);
+stage.addEventListener("pointerup", handleSwipeEnd);
+stage.addEventListener("pointercancel", () => {
+  state.swipeStart = null;
+  state.swipePointerId = null;
+});
 
 window.addEventListener("keydown", (event) => {
   if (event.key === "ArrowLeft") {
@@ -439,11 +403,21 @@ window.addEventListener("resize", resizeRenderer);
 function animate() {
   requestAnimationFrame(animate);
 
-  if (state.activeRoot && Date.now() - state.lastInteractionAt > 1200) {
-    displayPivot.rotation.y += 0.004;
+  const time = performance.now() * 0.001;
+
+  if (state.activeRoot) {
+    displayPivot.position.y = Math.sin(time * 1.15) * 0.12;
+    displayPivot.rotation.y = Math.sin(time * 0.72) * 0.18;
+    displayPivot.rotation.z = Math.sin(time * 0.48) * 0.035;
+    shadowCatcher.scale.y = shadowCatcher.scale.x * (0.92 + Math.sin(time * 1.15) * 0.04);
+    shadowCatcher.material.opacity = 0.11 - Math.sin(time * 1.15) * 0.018;
   }
 
-  controls.update();
+  const orbitAngle = Math.sin(time * 0.22) * 0.065;
+  const orbitHeight = 2.15 + Math.sin(time * 0.17) * 0.12;
+  const orbitRadius = 6.4;
+  camera.position.set(Math.sin(orbitAngle) * orbitRadius, orbitHeight, Math.cos(orbitAngle) * orbitRadius);
+  camera.lookAt(0, 1.45, 0);
   renderer.render(scene, camera);
 }
 
