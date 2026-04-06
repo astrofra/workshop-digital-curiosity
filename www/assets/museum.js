@@ -387,13 +387,13 @@ async function showItem(index) {
   }
 }
 
-async function transitionToItem(index) {
+async function transitionToItem(index, step) {
   if (!state.items.length || state.transition) {
     return;
   }
 
   const nextIndex = (index + state.items.length) % state.items.length;
-  const direction = nextIndex === state.index ? 1 : (nextIndex > state.index || (state.index === state.items.length - 1 && nextIndex === 0) ? 1 : -1);
+  const direction = step >= 0 ? 1 : -1;
   const item = state.items[nextIndex];
   const loadToken = ++state.loadToken;
 
@@ -537,7 +537,7 @@ function navigate(step) {
     return;
   }
 
-  transitionToItem(state.index + step);
+  transitionToItem(state.index + step, step);
 }
 
 function handleSwipeStart(event) {
@@ -625,7 +625,7 @@ function animate() {
   requestAnimationFrame(animate);
 
   const time = performance.now() * 0.001;
-  let transitionOffsetX = 0;
+  let objectOffsetX = 0;
 
   if (state.activeRoot) {
     const hoverTargetScale = state.pointerInsideStage && state.isHoveringObject ? 1.1 : 1;
@@ -656,21 +656,24 @@ function animate() {
     const direction = state.transition.direction;
 
     if (state.transition.phase === "out") {
-      transitionOffsetX = direction * state.transitionOffset * easeInQuad(progress);
+      objectOffsetX = -direction * state.transitionOffset * easeInQuad(progress);
     } else if (state.transition.phase === "in") {
-      transitionOffsetX = -direction * state.transitionOffset * (1 - easeOutQuad(progress));
+      objectOffsetX = direction * state.transitionOffset * (1 - easeOutQuad(progress));
     }
   }
+
+  displayPivot.position.x = objectOffsetX;
+  shadowCatcher.position.x = objectOffsetX;
 
   const orbitAngle = Math.sin(time * 0.22) * 0.065;
   const orbitHeight = 2.25 + Math.sin(time * 0.17) * 0.12;
   const orbitRadius = 8.0;
   camera.position.set(
-    Math.sin(orbitAngle) * orbitRadius + transitionOffsetX,
+    Math.sin(orbitAngle) * orbitRadius,
     orbitHeight,
     Math.cos(orbitAngle) * orbitRadius
   );
-  camera.lookAt(transitionOffsetX, 1.3, 0);
+  camera.lookAt(0, 1.3, 0);
   renderer.render(scene, camera);
 }
 
