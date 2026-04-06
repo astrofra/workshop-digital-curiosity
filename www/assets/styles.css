@@ -641,6 +641,42 @@ b {
   z-index: 3;
 }
 
+.viewer-object-loader {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  width: 4.5rem;
+  height: 4.5rem;
+  margin-left: -2.25rem;
+  margin-top: -2.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(18, 20, 24, 0.48);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+
+.viewer-spinner {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  border-top-color: var(--accent-strong);
+  animation: museum-spin 0.82s linear infinite;
+}
+
+@keyframes museum-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .viewer-titleblock {
   position: absolute;
   top: 1.35rem;
@@ -909,5 +945,9 @@ b {
 
   .submit-hero-figure {
     transform: translateY(0) rotate(3.2deg);
+  }
+
+  .viewer-spinner {
+    animation: none;
   }
 }
