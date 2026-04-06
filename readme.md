@@ -1,4 +1,4 @@
-# Curiosity — Synthetic Cabinet
+# Cabinet of (synthetic) curiosities
 
 This project is a collective experiment created during a workshop on AI and immersive media.
 
