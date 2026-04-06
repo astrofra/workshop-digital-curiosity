@@ -20,6 +20,11 @@ function root_dir(): string
     return dirname(__DIR__);
 }
 
+function config_dir(): string
+{
+    return root_dir() . '/config';
+}
+
 function data_dir(): string
 {
     $override = getenv('CURIOSITY_DATA_DIR');
@@ -66,6 +71,22 @@ function admin_token(): string
     return is_string($token) ? trim($token) : '';
 }
 
+function participant_codes_path(): string
+{
+    return config_dir() . '/participant_codes.php';
+}
+
+function participant_codes_text_path(): string
+{
+    return config_dir() . '/participant_codes.txt';
+}
+
+function debug_enabled(): bool
+{
+    $value = strtolower(trim((string) getenv('CURIOSITY_DEBUG')));
+    return in_array($value, ['1', 'true', 'yes', 'on'], true);
+}
+
 function send_no_store_headers(): void
 {
     header('Cache-Control: no-store');
@@ -94,13 +115,17 @@ function handle_api(callable $handler): void
         json_response($exception->status, ['error' => $exception->getMessage()]);
     } catch (Throwable $exception) {
         error_log((string) $exception);
-        json_response(500, ['error' => 'Une erreur interne est survenue.']);
+        $payload = ['error' => 'Une erreur interne est survenue.'];
+        if (debug_enabled()) {
+            $payload['detail'] = $exception->getMessage();
+        }
+        json_response(500, $payload);
     }
 }
 
 function ensure_storage(): void
 {
-    foreach ([data_dir(), items_dir(), tmp_dir()] as $directory) {
+    foreach ([config_dir(), data_dir(), items_dir(), tmp_dir()] as $directory) {
         if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
             throw new RuntimeException('Impossible de creer le dossier de stockage.');
         }
@@ -263,6 +288,88 @@ function create_unique_item_id(array $index): string
     }
 
     return $itemId;
+}
+
+function normalize_participant_code_list(array $values): array
+{
+    $normalizedCodes = [];
+
+    foreach ($values as $value) {
+        $code = strtoupper(trim((string) $value));
+        if ($code === '') {
+            continue;
+        }
+
+        if (!preg_match('/^[A-Z]{4}$/', $code)) {
+            throw new RuntimeException('Le fichier des codes participants contient un code invalide.');
+        }
+
+        $normalizedCodes[$code] = true;
+    }
+
+    $codes = array_keys($normalizedCodes);
+    if ($codes === []) {
+        throw new RuntimeException('La liste des codes participants est vide.');
+    }
+
+    return $codes;
+}
+
+function participant_codes_from_php_file(string $path): array
+{
+    $config = require $path;
+    if (!is_array($config) || !isset($config['codes']) || !is_array($config['codes'])) {
+        throw new RuntimeException('Le fichier des codes participants est invalide.');
+    }
+
+    return normalize_participant_code_list($config['codes']);
+}
+
+function participant_codes_from_text_file(string $path): array
+{
+    $lines = @file($path, FILE_IGNORE_NEW_LINES);
+    if ($lines === false) {
+        throw new RuntimeException('Impossible de lire la liste texte des codes participants.');
+    }
+
+    return normalize_participant_code_list($lines);
+}
+
+function configured_participant_codes(): array
+{
+    static $codes = null;
+
+    if (is_array($codes)) {
+        return $codes;
+    }
+
+    $phpPath = participant_codes_path();
+    $textPath = participant_codes_text_path();
+    $lastError = null;
+
+    if (is_file($phpPath)) {
+        try {
+            $codes = participant_codes_from_php_file($phpPath);
+            return $codes;
+        } catch (Throwable $exception) {
+            $lastError = $exception->getMessage();
+        }
+    }
+
+    if (is_file($textPath)) {
+        try {
+            $codes = participant_codes_from_text_file($textPath);
+            return $codes;
+        } catch (Throwable $exception) {
+            $lastError = $exception->getMessage();
+        }
+    }
+
+    if ($lastError !== null) {
+        throw new RuntimeException($lastError);
+    }
+
+    throw new RuntimeException('Le fichier des codes participants est manquant.');
 }
 
 function detect_upload_error(array $upload, string $label): void

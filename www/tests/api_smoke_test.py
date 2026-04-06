@@ -99,6 +99,59 @@ def get_json(base_url, path, headers=None):
         return error.code, payload
 
 
+def get_text(base_url, path, headers=None):
+    request = urllib.request.Request(f"{base_url}{path}", headers=headers or {})
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            return response.status, response.read().decode()
+    except urllib.error.HTTPError as error:
+        return error.code, error.read().decode()
+
+
+def get_headers(base_url, path, headers=None):
+    request = urllib.request.Request(f"{base_url}{path}", headers=headers or {})
+    with urllib.request.urlopen(request, timeout=10) as response:
+        return response.status, dict(response.headers.items())
+
+
+def load_codes():
+    php_path = ROOT / "config" / "participant_codes.php"
+    if php_path.is_file():
+        php = shutil.which("php")
+        if not php:
+            raise RuntimeError("PHP is required to read participant codes.")
+
+        result = subprocess.run(
+            [php, "-r", "echo json_encode(require 'config/participant_codes.php');"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        payload = json.loads(result.stdout)
+        return payload["codes"]
+
+    text_path = ROOT / "config" / "participant_codes.txt"
+    if text_path.is_file():
+        return [line.strip() for line in text_path.read_text().splitlines() if line.strip()]
+
+    raise RuntimeError("No participant code file found.")
+
+
+def find_unknown_code(codes):
+    existing = set(codes)
+
+    for first in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+        for second in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+            for third in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+                for fourth in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+                    candidate = f"{first}{second}{third}{fourth}"
+                    if candidate not in existing:
+                        return candidate
+
+    raise RuntimeError("No free participant code available for test.")
+
+
 PNG_BYTES = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////fwAJ+wP9lUTk3QAAAABJRU5ErkJggg=="
 )
@@ -121,6 +174,9 @@ def make_submission(base_url, participant_id, suffix=""):
 
 
 def main():
+    codes = load_codes()
+    unknown_code = find_unknown_code(codes)
+
     with tempfile.TemporaryDirectory() as temp_dir:
         port = find_free_port()
         base_url = f"http://127.0.0.1:{port}"
@@ -140,22 +196,28 @@ def main():
         try:
             wait_for_server(base_url)
 
-            status, payload = make_submission(base_url, "ABCD")
+            status, _ = get_text(base_url, "/admin/")
+            assert status == 200, status
+
+            status, payload = make_submission(base_url, codes[0])
             assert status == 201, payload
             item_id = payload["item"]["id"]
 
             status, payload = make_submission(base_url, "ABC1", "-invalid")
             assert status == 400, payload
 
-            status, payload = make_submission(base_url, "ABCD", "-duplicate")
+            status, payload = make_submission(base_url, codes[0], "-duplicate")
             assert status == 409, payload
+
+            status, payload = make_submission(base_url, unknown_code, "-unknown-code")
+            assert status == 403, payload
 
             status, payload = request_json(
                 base_url,
                 "POST",
                 "/api/upload.php",
                 fields={
-                    "participant_id": "EFGH",
+                    "participant_id": codes[1],
                     "name": "Artefact invalide",
                     "description": "Description",
                 },
@@ -176,6 +238,11 @@ def main():
             assert status == 200, payload
             assert payload["item"]["has_model"] is True, payload
 
+            media_status, media_headers = get_headers(base_url, payload["item"]["model_url"])
+            assert media_status == 200, media_headers
+            assert media_headers["Content-Disposition"].startswith("attachment;"), media_headers
+            assert "model.glb" in media_headers["Content-Disposition"], media_headers
+
             status, payload = request_json(
                 base_url,
                 "POST",
@@ -188,14 +255,24 @@ def main():
             with ThreadPoolExecutor(max_workers=4) as pool:
                 different_results = list(
                     pool.map(
-                        lambda code: make_submission(base_url, code),
-                        ["IJKL", "MNOP", "QRST", "UVWX"],
+                        lambda args: make_submission(base_url, args[0], args[1]),
+                        [
+                            (codes[2], "-bulk-1"),
+                            (codes[3], "-bulk-2"),
+                            (codes[4], "-bulk-3"),
+                            (codes[5], "-bulk-4"),
+                        ],
                     )
                 )
             assert all(status == 201 for status, _ in different_results), different_results
 
             with ThreadPoolExecutor(max_workers=2) as pool:
-                same_results = list(pool.map(lambda _: make_submission(base_url, "ZZZZ"), [0, 1]))
+                same_results = list(
+                    pool.map(
+                        lambda args: make_submission(base_url, args[0], args[1]),
+                        [(codes[6], "-same-1"), (codes[6], "-same-2")],
+                    )
+                )
             status_codes = sorted(status for status, _ in same_results)
             assert status_codes == [201, 409], same_results
 

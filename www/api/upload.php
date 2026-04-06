@@ -23,6 +23,10 @@ handle_api(function (): void {
     $entry = with_mutation_lock(function () use ($participantId, $name, $description, $author, $imageUpload, $imageInfo): array {
         $index = read_index();
 
+        if (!in_array($participantId, configured_participant_codes(), true)) {
+            abort_request(403, 'Ce code participant n est pas autorise.');
+        }
+
         foreach ($index as $existingEntry) {
             if (($existingEntry['participant_id'] ?? null) === $participantId) {
                 abort_request(409, 'Ce code participant a deja ete utilise.');

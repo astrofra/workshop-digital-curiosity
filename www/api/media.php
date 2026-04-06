@@ -25,9 +25,16 @@ handle_api(function (): void {
         abort_request(404, 'Fichier introuvable.');
     }
 
+    $disposition = $kind === 'image' ? 'inline' : 'attachment';
+
     send_no_store_headers();
     header('Content-Type: ' . $mime);
     header('Content-Length: ' . (string) filesize($assetPath));
+    header(
+        'Content-Disposition: ' . $disposition
+        . '; filename="' . $filename . '"'
+        . "; filename*=UTF-8''" . rawurlencode($filename)
+    );
     header('X-Content-Type-Options: nosniff');
     readfile($assetPath);
     exit;

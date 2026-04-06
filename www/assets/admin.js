@@ -20,7 +20,13 @@ let refreshTimer = null;
 
 function adminHeaders() {
   const token = tokenInput.value.trim();
-  return token ? { "X-Admin-Token": token } : {};
+  const headers = {};
+
+  if (token) {
+    headers["X-Admin-Token"] = token;
+  }
+
+  return headers;
 }
 
 function renderEmptyState() {
@@ -57,9 +63,8 @@ function createCard(item) {
     const modelLink = document.createElement("a");
     modelLink.className = "text-link";
     modelLink.href = item.model_url;
-    modelLink.target = "_blank";
-    modelLink.rel = "noreferrer";
-    modelLink.textContent = "Ouvrir le GLB";
+    modelLink.download = "model.glb";
+    modelLink.textContent = "Telecharger le GLB";
     node.querySelector(".artifact-links").append(modelLink);
   }
 
