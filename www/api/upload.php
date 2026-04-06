@@ -14,7 +14,7 @@ handle_api(function (): void {
     assert_participant_id($participantId);
 
     $name = normalize_text($_POST['name'] ?? null, true, 120);
-    $description = normalize_text($_POST['description'] ?? null, true, 1800);
+    $description = normalize_text($_POST['description'] ?? null, true, 512);
     $author = normalize_text($_POST['author'] ?? null, false, 120);
 
     $imageUpload = $_FILES['image'];

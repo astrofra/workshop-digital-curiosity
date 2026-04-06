@@ -26,7 +26,7 @@ const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x1a1d20, 9, 20);
 
 const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
-camera.position.set(0, 2.2, 6.4);
+camera.position.set(0, 2.35, 8.9);
 
 const displayPivot = new THREE.Group();
 scene.add(displayPivot);
@@ -48,7 +48,7 @@ scene.add(shadowCatcher);
 const ambientLight = new THREE.AmbientLight(0xece5d8, 0.35);
 scene.add(ambientLight);
 
-const spotlight = new THREE.SpotLight(0xfff0d5, 18, 30, Math.PI / 7, 0.42, 1.3);
+const spotlight = new THREE.SpotLight(0xfff0d5, 72, 30, Math.PI / 7, 0.42, 1.3);
 spotlight.position.set(3.8, 7.5, 4);
 spotlight.castShadow = true;
 spotlight.shadow.mapSize.set(2048, 2048);
@@ -149,7 +149,7 @@ function updateMeta(item, index, total, isFallback) {
   descriptionElement.textContent = item.description;
 }
 
-function fitObjectToStage(object, targetSize = 3.2) {
+function fitObjectToStage(object, targetSize = 2.35) {
   const box = new THREE.Box3().setFromObject(object);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
@@ -157,7 +157,7 @@ function fitObjectToStage(object, targetSize = 3.2) {
   const scale = targetSize / maxDimension;
 
   object.scale.setScalar(scale);
-  object.position.set(-center.x * scale, -center.y * scale + 1.55, -center.z * scale);
+  object.position.set(-center.x * scale, -center.y * scale + 1.42, -center.z * scale);
 
   const footprint = Math.max(size.x, size.z) * scale;
   shadowCatcher.scale.setScalar(Math.max(0.9, footprint * 0.7));
@@ -414,10 +414,10 @@ function animate() {
   }
 
   const orbitAngle = Math.sin(time * 0.22) * 0.065;
-  const orbitHeight = 2.15 + Math.sin(time * 0.17) * 0.12;
-  const orbitRadius = 6.4;
+  const orbitHeight = 2.25 + Math.sin(time * 0.17) * 0.12;
+  const orbitRadius = 8.9;
   camera.position.set(Math.sin(orbitAngle) * orbitRadius, orbitHeight, Math.cos(orbitAngle) * orbitRadius);
-  camera.lookAt(0, 1.45, 0);
+  camera.lookAt(0, 1.3, 0);
   renderer.render(scene, camera);
 }
 

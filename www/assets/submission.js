@@ -58,9 +58,7 @@ form.addEventListener("submit", async (event) => {
       body: payload
     });
 
-    form.reset();
-    resetPreview();
-    confirmationText.textContent = `${response.message} L'objet "${response.item.name}" est visible dans le musee.`;
+    confirmationText.textContent = `${response.message} L'objet "${response.item.name}" est visible dans le musee. Vous pouvez encore modifier le formulaire puis renvoyer une nouvelle version.`;
     confirmationCard.hidden = false;
     setStatus(statusElement, response.message || "Contribution envoyee avec succes.", "success");
   } catch (error) {
