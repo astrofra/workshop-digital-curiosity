@@ -5,7 +5,7 @@ import secrets
 from pathlib import Path
 
 
-COUNT = 20
+COUNT = 30
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 

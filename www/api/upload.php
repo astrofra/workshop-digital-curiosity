@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_common.php';
 
-handle_api(function (): void {
+handle_api(function () {
     require_method('POST');
 
     if (!isset($_FILES['image']) || !is_array($_FILES['image'])) {

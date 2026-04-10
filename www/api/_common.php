@@ -6,7 +6,7 @@ const MODEL_LIMIT_BYTES = 80 * 1024 * 1024;
 
 final class ApiException extends RuntimeException
 {
-    public int $status;
+    public $status;
 
     public function __construct(int $status, string $message)
     {
@@ -55,6 +55,22 @@ function lock_path(): string
     return data_dir() . '/.lock';
 }
 
+function app_base_path(): string
+{
+    $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    $directory = rtrim(dirname($scriptName), '/');
+
+    if ($directory === '' || $directory === '.') {
+        return '';
+    }
+
+    if (substr($directory, -4) === '/api') {
+        $directory = substr($directory, 0, -4);
+    }
+
+    return $directory === '' || $directory === '.' ? '' : $directory;
+}
+
 function item_dir(string $itemId): string
 {
     return items_dir() . '/' . $itemId;
@@ -81,12 +97,12 @@ function debug_enabled(): bool
     return in_array($value, ['1', 'true', 'yes', 'on'], true);
 }
 
-function send_no_store_headers(): void
+function send_no_store_headers()
 {
     header('Cache-Control: no-store');
 }
 
-function json_response(int $status, array $payload): never
+function json_response(int $status, array $payload)
 {
     http_response_code($status);
     send_no_store_headers();
@@ -95,12 +111,12 @@ function json_response(int $status, array $payload): never
     exit;
 }
 
-function abort_request(int $status, string $message): never
+function abort_request(int $status, string $message)
 {
     throw new ApiException($status, $message);
 }
 
-function handle_api(callable $handler): void
+function handle_api(callable $handler)
 {
     try {
         ensure_storage();
@@ -117,7 +133,7 @@ function handle_api(callable $handler): void
     }
 }
 
-function ensure_storage(): void
+function ensure_storage()
 {
     foreach ([config_dir(), data_dir(), items_dir(), tmp_dir()] as $directory) {
         if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
@@ -130,7 +146,7 @@ function ensure_storage(): void
     }
 }
 
-function require_method(string $expected): void
+function require_method(string $expected)
 {
     $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
     if ($method !== strtoupper($expected)) {
@@ -157,12 +173,12 @@ function query_string(string $key): string
     return $value;
 }
 
-function normalize_participant_id(?string $value): string
+function normalize_participant_id($value): string
 {
     return strtoupper(trim((string) $value));
 }
 
-function assert_participant_id(string $value): void
+function assert_participant_id(string $value)
 {
     if (!preg_match('/^[A-Z]{4}$/', $value)) {
         abort_request(400, 'Le code participant doit contenir exactement 4 lettres.');
@@ -178,7 +194,7 @@ function text_length(string $value): int
     return strlen($value);
 }
 
-function normalize_text(?string $value, bool $required = false, int $maxLength = 500): ?string
+function normalize_text($value, bool $required = false, int $maxLength = 500)
 {
     $normalized = trim(str_replace("\r\n", "\n", (string) $value));
 
@@ -197,7 +213,7 @@ function normalize_text(?string $value, bool $required = false, int $maxLength =
     return $normalized;
 }
 
-function read_json_file(string $path): mixed
+function read_json_file(string $path)
 {
     $content = @file_get_contents($path);
     if ($content === false) {
@@ -226,7 +242,7 @@ function read_index(): array
     return $decoded;
 }
 
-function write_json_atomic(string $path, array $payload): void
+function write_json_atomic(string $path, array $payload)
 {
     $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     if ($json === false) {
@@ -244,7 +260,7 @@ function write_json_atomic(string $path, array $payload): void
     }
 }
 
-function write_item_meta(string $itemId, array $entry): void
+function write_item_meta(string $itemId, array $entry)
 {
     write_json_atomic(meta_path($itemId), $entry);
 }
@@ -353,7 +369,7 @@ function configured_participant_codes(): array
     throw new RuntimeException('Le fichier des codes participants est manquant.');
 }
 
-function detect_upload_error(array $upload, string $label): void
+function detect_upload_error(array $upload, string $label)
 {
     $errorCode = (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
 
@@ -425,7 +441,7 @@ function inspect_model_upload(array $upload): array
     ];
 }
 
-function move_uploaded_file_to(array $upload, string $destination): void
+function move_uploaded_file_to(array $upload, string $destination)
 {
     $source = (string) ($upload['tmp_name'] ?? '');
     if ($source === '') {
@@ -443,7 +459,7 @@ function move_uploaded_file_to(array $upload, string $destination): void
     throw new RuntimeException('Impossible de deplacer le fichier televerse.');
 }
 
-function delete_tree(string $path): void
+function delete_tree(string $path)
 {
     if (!file_exists($path)) {
         return;
@@ -470,7 +486,7 @@ function delete_tree(string $path): void
     @rmdir($path);
 }
 
-function with_mutation_lock(callable $handler): mixed
+function with_mutation_lock(callable $handler)
 {
     $handle = fopen(lock_path(), 'c+');
     if ($handle === false) {
@@ -491,6 +507,8 @@ function with_mutation_lock(callable $handler): mixed
 
 function create_public_item(array $entry): array
 {
+    $basePath = app_base_path();
+
     return [
         'id' => $entry['id'],
         'name' => $entry['name'],
@@ -499,8 +517,8 @@ function create_public_item(array $entry): array
         'fictional_date' => $entry['fictional_date'] ?? null,
         'created_at' => $entry['created_at'],
         'has_model' => (bool) $entry['has_model'],
-        'image_url' => '/api/media.php?' . http_build_query(['id' => $entry['id'], 'kind' => 'image']),
-        'model_url' => !empty($entry['has_model']) ? '/api/media.php?' . http_build_query(['id' => $entry['id'], 'kind' => 'model']) : null,
+        'image_url' => $basePath . '/api/media.php?' . http_build_query(['id' => $entry['id'], 'kind' => 'image']),
+        'model_url' => !empty($entry['has_model']) ? $basePath . '/api/media.php?' . http_build_query(['id' => $entry['id'], 'kind' => 'model']) : null,
     ];
 }
 
@@ -512,7 +530,7 @@ function create_admin_item(array $entry): array
     ]);
 }
 
-function find_index_entry(array $index, string $itemId): ?array
+function find_index_entry(array $index, string $itemId)
 {
     foreach ($index as $entry) {
         if (($entry['id'] ?? null) === $itemId) {

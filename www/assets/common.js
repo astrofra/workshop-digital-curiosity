@@ -7,8 +7,17 @@ export class ApiError extends Error {
   }
 }
 
+export function getAppBaseUrl() {
+  const base = document.documentElement.dataset.appBase || ".";
+  return new URL(base.replace(/\/?$/, "/"), window.location.href);
+}
+
+export function buildAppUrl(path = "") {
+  return new URL(path.replace(/^\//, ""), getAppBaseUrl()).toString();
+}
+
 export function buildApiUrl(scriptName, params = {}) {
-  const url = new URL(`/api/${scriptName}`, window.location.origin);
+  const url = new URL(`api/${scriptName}`, getAppBaseUrl());
 
   for (const [key, value] of Object.entries(params)) {
     if (value === null || value === undefined || value === "") {
@@ -65,6 +74,10 @@ export function escapeHtml(value = "") {
 }
 
 export function formatFrenchDate(value) {
+  return formatDisplayDate(value, "fr");
+}
+
+export function formatDisplayDate(value, language = "fr") {
   if (!value) {
     return "";
   }
@@ -76,7 +89,9 @@ export function formatFrenchDate(value) {
     return value;
   }
 
-  return new Intl.DateTimeFormat("fr-FR", {
+  const locale = language === "fr" ? "fr-FR" : "en-GB";
+
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "long"
   }).format(date);
 }

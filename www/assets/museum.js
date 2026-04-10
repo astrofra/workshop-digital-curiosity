@@ -1,12 +1,20 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-import { ApiError, buildApiUrl, formatFrenchDate, requestJson, setStatus } from "/assets/common.js";
+import { ApiError, buildApiUrl, formatDisplayDate, requestJson, setStatus } from "./common.js";
+import {
+  getLanguage,
+  initLanguageSwitcher,
+  onLanguageChange,
+  translateKnownMessage
+} from "./i18n.js";
 
 const stage = document.querySelector("[data-viewer-stage]");
 const canvasHost = document.querySelector("[data-viewer-canvas]");
 const statusElement = document.querySelector("[data-viewer-status]");
 const objectLoaderElement = document.querySelector("[data-viewer-object-loader]");
+const titleBlockEyebrow = document.querySelector(".viewer-titleblock .eyebrow");
+const titleBlockTitle = document.querySelector(".viewer-titleblock h1");
 const countElement = document.querySelector("[data-viewer-count]");
 const titleElement = document.querySelector("[data-viewer-title]");
 const authorElement = document.querySelector("[data-viewer-author]");
@@ -94,6 +102,53 @@ const textureLoader = new THREE.TextureLoader();
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2(2, 2);
 
+const translations = {
+  fr: {
+    pageTitle: "Cabinet de curiosités - New Image Festival",
+    festivalName: "New Images Festival",
+    museumTitle: "Cabinet de curiosités",
+    prevAria: "Objet precedent",
+    nextAria: "Objet suivant",
+    loadingArchive: "Chargement des artefacts...",
+    loadingObject: "Chargement de l'objet...",
+    emptyTitle: "Archive vide",
+    emptyState: "Aucune contribution n'est encore visible.",
+    emptyDescription: "Invitez les participant(e)s a soumettre une image pour lancer l'exposition.",
+    waitingFirstContribution: "Le musee attend sa premiere contribution.",
+    archiveLoadError: "Impossible de charger l'archive.",
+    objectLoadError: "Impossible de charger cet artefact.",
+    unknownAuthor: "auteur.ice inconnu.e",
+    authorPrefix: "Par",
+    dateLabel: "Date",
+    fallbackState: "Image source exposee en attendant le modele GLB"
+  },
+  en: {
+    pageTitle: "Cabinet of Curiosities - New Image Festival",
+    festivalName: "New Images Festival",
+    museumTitle: "Cabinet of Curiosities",
+    prevAria: "Previous object",
+    nextAria: "Next object",
+    loadingArchive: "Loading artifacts...",
+    loadingObject: "Loading object...",
+    emptyTitle: "Archive empty",
+    emptyState: "No contribution is visible yet.",
+    emptyDescription: "Invite participants to submit an image to start the exhibition.",
+    waitingFirstContribution: "The museum is waiting for its first contribution.",
+    archiveLoadError: "Unable to load the archive.",
+    objectLoadError: "Unable to load this artifact.",
+    unknownAuthor: "unknown author",
+    authorPrefix: "By",
+    dateLabel: "Date",
+    fallbackState: "Source image displayed while awaiting the GLB model"
+  }
+};
+
+const apiMessageTranslations = {
+  "Impossible de charger l'archive.": "Unable to load the archive.",
+  "Impossible de charger cet artefact.": "Unable to load this artifact.",
+  "Une erreur interne est survenue.": "An internal error occurred."
+};
+
 const state = {
   items: [],
   index: 0,
@@ -115,11 +170,37 @@ const state = {
   swipeMoved: false,
   spinStartAt: 0,
   spinDuration: 3000,
+  activeIsFallback: false,
   transition: null,
   transitionDuration: 250,
   transitionOffset: 2.4,
+  statusKey: "",
+  statusRawMessage: "",
+  statusState: "info",
   refreshTimer: null
 };
+
+function t(key) {
+  return translations[getLanguage()][key];
+}
+
+function translateApiMessage(message) {
+  return translateKnownMessage(message, getLanguage(), apiMessageTranslations);
+}
+
+function setViewerStatusFromKey(key = "", status = "info") {
+  state.statusKey = key;
+  state.statusRawMessage = "";
+  state.statusState = status;
+  setStatus(statusElement, key ? t(key) : "", status);
+}
+
+function setViewerStatusFromRaw(message = "", status = "info") {
+  state.statusKey = "";
+  state.statusRawMessage = message;
+  state.statusState = status;
+  setStatus(statusElement, translateApiMessage(message), status);
+}
 
 function disposeResources(resources) {
   for (const resource of resources) {
@@ -154,6 +235,7 @@ function clearActiveObject() {
   state.activeScaleFactor = 1;
   state.activeResources = [];
   state.activeFootprint = 1;
+  state.activeIsFallback = false;
   state.isHoveringObject = false;
   shadowCatcher.visible = false;
 }
@@ -190,9 +272,9 @@ function wait(ms) {
 function updateMeta(item, index, total, isFallback) {
   countElement.textContent = `${index + 1} / ${total}`;
   titleElement.textContent = item.name;
-  authorElement.textContent = item.author ? `Par ${item.author}` : "auteur.ice inconnu.e";
-  createdElement.textContent = `Date ${item.fictional_date || formatFrenchDate(item.created_at)}`;
-  stateElement.textContent = isFallback ? "Image source exposee en attendant le modele GLB" : "";
+  authorElement.textContent = item.author ? `${t("authorPrefix")} ${item.author}` : t("unknownAuthor");
+  createdElement.textContent = `${t("dateLabel")} ${item.fictional_date || formatDisplayDate(item.created_at, getLanguage())}`;
+  stateElement.textContent = isFallback ? t("fallbackState") : "";
   stateElement.hidden = !isFallback;
   descriptionElement.textContent = item.description;
 }
@@ -344,6 +426,7 @@ function activatePreparedArtifact(prepared, index) {
   state.activeScaleFactor = 1;
   state.activeResources = prepared.resources;
   state.activeFootprint = prepared.footprint;
+  state.activeIsFallback = prepared.isFallback;
   state.spinStartAt = 0;
   shadowCatcher.visible = true;
   shadowCatcher.scale.setScalar(prepared.footprint);
@@ -361,7 +444,7 @@ async function showItem(index) {
   const item = state.items[nextIndex];
   const loadToken = ++state.loadToken;
   setButtonsDisabled(true);
-  setStatus(statusElement, "Chargement de l'objet...", "info");
+  setViewerStatusFromKey("loadingObject", "info");
   setObjectLoaderVisible(true);
 
   try {
@@ -373,14 +456,14 @@ async function showItem(index) {
     }
 
     activatePreparedArtifact(prepared, nextIndex);
-    setStatus(statusElement, "", "info");
+    setViewerStatusFromKey("", "info");
   } catch (error) {
     console.error(error);
-    setStatus(
-      statusElement,
-      error instanceof ApiError ? error.message : "Impossible de charger cet artefact.",
-      "error"
-    );
+    if (error instanceof ApiError) {
+      setViewerStatusFromRaw(error.message, "error");
+    } else {
+      setViewerStatusFromKey("objectLoadError", "error");
+    }
   } finally {
     setObjectLoaderVisible(false);
     setButtonsDisabled(state.items.length <= 1);
@@ -399,7 +482,7 @@ async function transitionToItem(index, step) {
 
   setButtonsDisabled(true);
   setObjectLoaderVisible(true);
-  setStatus(statusElement, "Chargement de l'objet...", "info");
+  setViewerStatusFromKey("loadingObject", "info");
 
   try {
     const prepared = await prepareArtifact(item);
@@ -450,7 +533,7 @@ async function transitionToItem(index, step) {
       nextIndex
     );
     shadowCatcher.scale.setScalar(state.activeFootprint);
-    setStatus(statusElement, "", "info");
+    setViewerStatusFromKey("", "info");
 
     state.transition = {
       phase: "in",
@@ -485,7 +568,7 @@ function activeItemId() {
 
 async function loadItems({ silent = false } = {}) {
   if (!silent) {
-    setStatus(statusElement, "Chargement des artefacts...", "info");
+    setViewerStatusFromKey("loadingArchive", "info");
   }
 
   try {
@@ -498,15 +581,15 @@ async function loadItems({ silent = false } = {}) {
 
     if (!state.items.length) {
       countElement.textContent = "0 / 0";
-      titleElement.textContent = "Archive vide";
+      titleElement.textContent = t("emptyTitle");
       authorElement.textContent = "";
       createdElement.textContent = "";
       stateElement.hidden = false;
-      stateElement.textContent = "Aucune contribution n'est encore visible.";
-      descriptionElement.textContent = "Invitez les participant(e)s a soumettre une image pour lancer l'exposition.";
+      stateElement.textContent = t("emptyState");
+      descriptionElement.textContent = t("emptyDescription");
       setButtonsDisabled(true);
       if (!silent || !state.activeRoot) {
-        setStatus(statusElement, "Le musee attend sa premiere contribution.", "info");
+        setViewerStatusFromKey("waitingFirstContribution", "info");
       }
       clearActiveObject();
       return;
@@ -514,7 +597,7 @@ async function loadItems({ silent = false } = {}) {
 
     if (!shouldRefreshView) {
       if (!silent) {
-        setStatus(statusElement, "", "info");
+        setViewerStatusFromKey("", "info");
       }
       return;
     }
@@ -523,12 +606,36 @@ async function loadItems({ silent = false } = {}) {
     const startIndex = state.items.findIndex((item) => item.id === preferredId);
     await showItem(startIndex >= 0 ? startIndex : 0);
   } catch (error) {
-    setStatus(
-      statusElement,
-      error instanceof ApiError ? error.message : "Impossible de charger l'archive.",
-      "error"
-    );
+    if (error instanceof ApiError) {
+      setViewerStatusFromRaw(error.message, "error");
+    } else {
+      setViewerStatusFromKey("archiveLoadError", "error");
+    }
     setButtonsDisabled(true);
+  }
+}
+
+function applyTranslations() {
+  document.title = t("pageTitle");
+  titleBlockEyebrow.textContent = t("festivalName");
+  titleBlockTitle.textContent = t("museumTitle");
+  previousButton.setAttribute("aria-label", t("prevAria"));
+  nextButton.setAttribute("aria-label", t("nextAria"));
+
+  if (!state.items.length) {
+    titleElement.textContent = t("emptyTitle");
+    if (stateElement.textContent) {
+      stateElement.textContent = t("emptyState");
+    }
+    descriptionElement.textContent = t("emptyDescription");
+  } else {
+    updateMeta(state.items[state.index], state.index, state.items.length, state.activeIsFallback);
+  }
+
+  if (state.statusKey) {
+    setStatus(statusElement, t(state.statusKey), state.statusState);
+  } else {
+    setStatus(statusElement, translateApiMessage(state.statusRawMessage), state.statusState);
   }
 }
 
@@ -678,6 +785,8 @@ function animate() {
 }
 
 resizeRenderer();
+initLanguageSwitcher();
+onLanguageChange(applyTranslations);
 loadItems();
 state.refreshTimer = window.setInterval(() => {
   loadItems({ silent: true });

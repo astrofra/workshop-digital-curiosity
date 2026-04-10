@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-app-base=".">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cabinet de curiosités - New Image Festival</title>
-    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="stylesheet" href="assets/styles.css" />
     <script type="importmap">
       {
         "imports": {
-          "three": "/vendor/three/three.module.js",
-          "three/addons/": "/vendor/three/examples/jsm/"
+          "three": "./vendor/three/three.module.js",
+          "three/addons/": "./vendor/three/examples/jsm/"
         }
       }
     </script>
@@ -23,6 +23,10 @@
           <div class="viewer-canvas" data-viewer-canvas></div>
           <div class="viewer-object-loader" data-viewer-object-loader hidden aria-hidden="true">
             <span class="viewer-spinner"></span>
+          </div>
+          <div class="lang-switch lang-switch-overlay" data-lang-switcher data-label-fr="Choix de la langue" data-label-en="Language switch" aria-label="Choix de la langue">
+            <button class="lang-switch-button" type="button" data-lang="fr" aria-pressed="true">FR</button>
+            <button class="lang-switch-button" type="button" data-lang="en" aria-pressed="false">EN</button>
           </div>
 
           <div class="viewer-titleblock">
@@ -64,6 +68,6 @@
       </section>
     </main>
 
-    <script type="module" src="/assets/museum.js"></script>
+    <script type="module" src="assets/museum.js"></script>
   </body>
 </html>

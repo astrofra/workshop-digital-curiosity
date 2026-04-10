@@ -110,6 +110,40 @@ textarea {
   border-color: var(--line-strong);
 }
 
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(20, 23, 27, 0.68);
+  backdrop-filter: blur(12px);
+}
+
+.lang-switch-button {
+  min-width: 2.55rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.45rem 0.7rem;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.lang-switch-button[aria-pressed="true"] {
+  background: rgba(214, 163, 93, 0.18);
+  color: var(--text);
+}
+
+.lang-switch-overlay {
+  position: absolute;
+  top: 1.35rem;
+  right: 1.35rem;
+  z-index: 4;
+}
+
 .shell {
   width: min(calc(100% - 2rem), var(--page-max));
   margin: 0 auto;

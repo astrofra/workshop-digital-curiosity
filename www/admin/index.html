@@ -1,15 +1,19 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-app-base="..">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Curiosity Museum - Admin</title>
-    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="stylesheet" href="../assets/styles.css" />
   </head>
   <body class="page page-admin">
     <div class="page-glow" aria-hidden="true"></div>
     <header class="site-header">
-      <a class="site-mark" href="/">New Images Festival</a>
+      <a class="site-mark" href="../">New Images Festival</a>
+      <div class="lang-switch" data-lang-switcher data-label-fr="Choix de la langue" data-label-en="Language switch" aria-label="Choix de la langue">
+        <button class="lang-switch-button" type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button class="lang-switch-button" type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
     </header>
 
     <main class="shell shell-admin">
@@ -67,6 +71,6 @@
       </article>
     </template>
 
-    <script type="module" src="/assets/admin.js"></script>
+    <script type="module" src="../assets/admin.js"></script>
   </body>
 </html>
