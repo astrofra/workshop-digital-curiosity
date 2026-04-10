@@ -94,7 +94,18 @@ function participant_codes_text_path(): string
 function debug_enabled(): bool
 {
     $value = strtolower(trim((string) getenv('CURIOSITY_DEBUG')));
-    return in_array($value, ['1', 'true', 'yes', 'on'], true);
+    if (in_array($value, ['1', 'true', 'yes', 'on'], true)) {
+        return true;
+    }
+
+    foreach ([$_GET, $_POST] as $source) {
+        $requestValue = strtolower(trim((string) ($source['debug'] ?? '')));
+        if (in_array($requestValue, ['1', 'true', 'yes', 'on'], true)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 function send_no_store_headers()
@@ -126,9 +137,7 @@ function handle_api(callable $handler)
     } catch (Throwable $exception) {
         error_log((string) $exception);
         $payload = ['error' => 'Une erreur interne est survenue.'];
-        if (debug_enabled()) {
-            $payload['detail'] = $exception->getMessage();
-        }
+        $payload['detail'] = $exception->getMessage();
         json_response(500, $payload);
     }
 }

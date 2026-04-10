@@ -48,7 +48,7 @@ handle_api(function () {
             'author' => $author,
             'fictional_date' => $fictionalDate,
             'created_at' => $now->format('Y-m-d'),
-            'submitted_at' => $now->format(DateTimeInterface::ATOM),
+            'submitted_at' => $now->format(DATE_ATOM),
             'has_model' => false,
             'image_filename' => $imageInfo['filename'],
             'image_mime' => $imageInfo['mime'],

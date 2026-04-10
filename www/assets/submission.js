@@ -127,6 +127,7 @@ const state = {
   lastConfirmationName: "",
   lastStatusKey: "",
   lastStatusRawMessage: "",
+  lastStatusDetail: "",
   lastStatusState: "info"
 };
 
@@ -175,6 +176,10 @@ function renderStatus() {
     message = t(state.lastStatusKey);
   } else if (state.lastStatusRawMessage) {
     message = translateApiMessage(state.lastStatusRawMessage);
+  }
+
+  if (message && state.lastStatusDetail) {
+    message = `${message} (${state.lastStatusDetail})`;
   }
 
   if (!message) {
@@ -233,6 +238,7 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   state.lastStatusKey = "";
   state.lastStatusRawMessage = "";
+  state.lastStatusDetail = "";
   renderStatus();
   confirmationCard.hidden = true;
 
@@ -243,7 +249,7 @@ form.addEventListener("submit", async (event) => {
   renderSubmitButton();
 
   try {
-    const response = await requestJson(buildApiUrl("upload.php"), {
+    const response = await requestJson(buildApiUrl("upload.php", { debug: 1 }), {
       method: "POST",
       body: payload
     });
@@ -254,15 +260,18 @@ form.addEventListener("submit", async (event) => {
     confirmationCard.hidden = false;
 
     state.lastStatusRawMessage = response.message || "";
+    state.lastStatusDetail = "";
     state.lastStatusState = "success";
     renderStatus();
   } catch (error) {
     if (error instanceof ApiError) {
       state.lastStatusRawMessage = error.message;
       state.lastStatusKey = "";
+      state.lastStatusDetail = error.payload?.detail || "";
     } else {
       state.lastStatusKey = "genericError";
       state.lastStatusRawMessage = "";
+      state.lastStatusDetail = "";
     }
     state.lastStatusState = "error";
     renderStatus();
