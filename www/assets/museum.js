@@ -404,7 +404,7 @@ async function buildBlendedImageArtifact(imageUrl, imageUrl2, resources) {
   drawCover(secondaryCtx, secondaryTexture.image, size, size);
 
   maskCtx.clearRect(0, 0, size, size);
-  const gradient = maskCtx.createLinearGradient(size * 0.35, 0, size * 0.65, 0);
+  const gradient = maskCtx.createLinearGradient(size * 0.2, 0, size * 0.8, size);
   gradient.addColorStop(0, "rgba(255, 255, 255, 0)");
   gradient.addColorStop(0.42, "rgba(255, 255, 255, 0)");
   gradient.addColorStop(0.58, "rgba(255, 255, 255, 1)");
