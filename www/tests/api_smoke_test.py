@@ -158,7 +158,11 @@ PNG_BYTES = base64.b64decode(
 GLB_BYTES = b"glTF\x02\x00\x00\x00\x14\x00\x00\x00\x00\x00\x00\x00"
 
 
-def make_submission(base_url, participant_id, suffix=""):
+def make_submission(base_url, participant_id, suffix="", second_image=False):
+    files = {"image": (f"image-{participant_id}.png", "image/png", PNG_BYTES)}
+    if second_image:
+        files["image_2"] = (f"image-2-{participant_id}.png", "image/png", PNG_BYTES)
+
     return request_json(
         base_url,
         "POST",
@@ -170,7 +174,7 @@ def make_submission(base_url, participant_id, suffix=""):
             "author": "Testeur",
             "fictional_date": f"An {participant_id}{suffix}",
         },
-        files={"image": (f"image-{participant_id}.png", "image/png", PNG_BYTES)},
+        files=files,
     )
 
 
@@ -205,11 +209,12 @@ def main():
             status, _ = get_text(base_url, "/admin/")
             assert status == 200, status
 
-            status, payload = make_submission(base_url, codes[0])
+            status, payload = make_submission(base_url, codes[0], second_image=True)
             assert status == 201, payload
             item_id = payload["item"]["id"]
             assert payload["item"]["has_model"] is False, payload
             assert payload["item"]["fictional_date"] == f"An {codes[0]}", payload
+            assert payload["item"]["image_url_2"] is not None, payload
 
             status, payload = make_submission(base_url, "ABC1", "-invalid")
             assert status == 400, payload
@@ -218,6 +223,7 @@ def main():
             assert status == 200, payload
             assert payload["item"]["id"] == item_id, payload
             assert payload["item"]["has_model"] is False, payload
+            assert payload["item"]["image_url_2"] is None, payload
 
             status, payload = make_submission(base_url, unknown_code, "-unknown-code")
             assert status == 403, payload
@@ -238,6 +244,20 @@ def main():
             status, payload = get_json(base_url, "/api/admin-items.php")
             assert status == 200, payload
             assert isinstance(payload["items"], list), payload
+            replacement_item = next(item for item in payload["items"] if item["id"] == item_id)
+            assert replacement_item["image_url_2"] is None, payload
+
+            status, payload = make_submission(base_url, codes[1], "-dual", second_image=True)
+            assert status == 201, payload
+            dual_item_id = payload["item"]["id"]
+            assert payload["item"]["image_url_2"] is not None, payload
+
+            media_status, media_headers = get_headers(base_url, payload["item"]["image_url_2"])
+            assert media_status == 200, media_headers
+            assert media_headers["Content-Disposition"].startswith("inline;"), media_headers
+
+            dual_meta = json.loads((Path(temp_dir) / "data" / "items" / dual_item_id / "meta.json").read_text())
+            assert dual_meta["image_filename"] != dual_meta["image_2_filename"], dual_meta
 
             status, payload = request_json(
                 base_url,
@@ -278,6 +298,7 @@ def main():
             status, payload = get_json(base_url, "/api/items.php")
             assert status == 200, payload
             assert all(item["id"] != item_id for item in payload["items"]), payload
+            assert any(item["id"] == dual_item_id for item in payload["items"]), payload
 
             status, payload = request_json(
                 base_url,
@@ -319,6 +340,7 @@ def main():
             assert len(payload["items"]) >= 6, payload
             assert all("participant_id" not in item for item in payload["items"]), payload
             assert all("fictional_date" in item for item in payload["items"]), payload
+            assert all("image_url_2" in item for item in payload["items"]), payload
             participant_names = [item["name"] for item in payload["items"]]
             assert "Artefact " + codes[0] + "-after-delete" in participant_names, payload
 
@@ -328,6 +350,7 @@ def main():
             )
             assert status == 200, payload
             assert all("participant_id" in item for item in payload["items"]), payload
+            assert all("image_url_2" in item for item in payload["items"]), payload
             participant_ids = [item["participant_id"] for item in payload["items"]]
             assert participant_ids.count(codes[0]) == 1, payload
             assert participant_ids.count(codes[6]) == 1, payload

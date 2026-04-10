@@ -397,7 +397,7 @@ function detect_upload_error(array $upload, string $label)
     abort_request(400, 'Le fichier televerse est invalide.');
 }
 
-function inspect_image_upload(array $upload): array
+function inspect_image_upload(array $upload, string $basename = 'image'): array
 {
     detect_upload_error($upload, 'image');
 
@@ -418,7 +418,7 @@ function inspect_image_upload(array $upload): array
     }
 
     return [
-        'filename' => 'image' . $mimeMap[$mime],
+        'filename' => $basename . $mimeMap[$mime],
         'mime' => $mime,
     ];
 }
@@ -527,6 +527,7 @@ function create_public_item(array $entry): array
         'created_at' => $entry['created_at'],
         'has_model' => (bool) $entry['has_model'],
         'image_url' => $basePath . '/api/media.php?' . http_build_query(['id' => $entry['id'], 'kind' => 'image']),
+        'image_url_2' => !empty($entry['image_2_filename']) ? $basePath . '/api/media.php?' . http_build_query(['id' => $entry['id'], 'kind' => 'image2']) : null,
         'model_url' => !empty($entry['has_model']) ? $basePath . '/api/media.php?' . http_build_query(['id' => $entry['id'], 'kind' => 'model']) : null,
     ];
 }

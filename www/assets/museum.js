@@ -365,6 +365,75 @@ async function buildImageArtifact(imageUrl, resources) {
   return plane;
 }
 
+function drawCover(ctx, image, width, height) {
+  const imageWidth = image.naturalWidth || image.videoWidth || image.width || width;
+  const imageHeight = image.naturalHeight || image.videoHeight || image.height || height;
+  const scale = Math.max(width / Math.max(imageWidth, 1), height / Math.max(imageHeight, 1));
+  const drawWidth = imageWidth * scale;
+  const drawHeight = imageHeight * scale;
+  const offsetX = (width - drawWidth) / 2;
+  const offsetY = (height - drawHeight) / 2;
+  ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+}
+
+async function buildBlendedImageArtifact(imageUrl, imageUrl2, resources) {
+  const primaryTexture = await loadTexture(imageUrl);
+  primaryTexture.colorSpace = THREE.SRGBColorSpace;
+  resources.push(primaryTexture);
+
+  const secondaryTexture = await loadTexture(imageUrl2);
+  secondaryTexture.colorSpace = THREE.SRGBColorSpace;
+  resources.push(secondaryTexture);
+
+  const size = 1024;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+
+  const ctx = canvas.getContext("2d");
+  const secondaryCanvas = document.createElement("canvas");
+  secondaryCanvas.width = size;
+  secondaryCanvas.height = size;
+  const secondaryCtx = secondaryCanvas.getContext("2d");
+  const maskCanvas = document.createElement("canvas");
+  maskCanvas.width = size;
+  maskCanvas.height = size;
+  const maskCtx = maskCanvas.getContext("2d");
+
+  drawCover(ctx, primaryTexture.image, size, size);
+  drawCover(secondaryCtx, secondaryTexture.image, size, size);
+
+  maskCtx.clearRect(0, 0, size, size);
+  const gradient = maskCtx.createLinearGradient(size * 0.35, 0, size * 0.65, 0);
+  gradient.addColorStop(0, "rgba(255, 255, 255, 0)");
+  gradient.addColorStop(0.42, "rgba(255, 255, 255, 0)");
+  gradient.addColorStop(0.58, "rgba(255, 255, 255, 1)");
+  gradient.addColorStop(1, "rgba(255, 255, 255, 1)");
+  maskCtx.fillStyle = gradient;
+  maskCtx.fillRect(0, 0, size, size);
+
+  secondaryCtx.globalCompositeOperation = "destination-in";
+  secondaryCtx.drawImage(maskCanvas, 0, 0);
+  ctx.drawImage(secondaryCanvas, 0, 0);
+
+  const composedTexture = new THREE.CanvasTexture(canvas);
+  composedTexture.colorSpace = THREE.SRGBColorSpace;
+  resources.push(composedTexture);
+
+  const plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.2, 2.8),
+    new THREE.MeshStandardMaterial({
+      map: composedTexture,
+      side: THREE.DoubleSide,
+      transparent: true,
+      roughness: 0.86,
+      metalness: 0.02
+    })
+  );
+  plane.castShadow = true;
+  return plane;
+}
+
 async function buildArtifact(item, resources) {
   if (item.has_model && item.model_url) {
     try {
@@ -382,6 +451,13 @@ async function buildArtifact(item, resources) {
     } catch (error) {
       console.error("Unable to load GLB, using image placeholder instead.", error);
     }
+  }
+
+  if (item.image_url_2) {
+    return {
+      object: await buildBlendedImageArtifact(item.image_url, item.image_url_2, resources),
+      isFallback: true
+    };
   }
 
   return {

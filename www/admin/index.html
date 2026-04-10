@@ -43,7 +43,10 @@
     <template id="admin-card-template">
       <article class="artifact-card panel">
         <div class="artifact-image-wrap">
-          <img class="artifact-image" alt="" />
+          <div class="artifact-image-grid">
+            <img class="artifact-image" alt="" />
+            <img class="artifact-image artifact-image-secondary" alt="" hidden />
+          </div>
           <span class="artifact-badge"></span>
         </div>
         <div class="artifact-card-body">
@@ -56,6 +59,7 @@
           <p class="artifact-description"></p>
           <div class="artifact-links">
             <a class="text-link artifact-image-link" target="_blank" rel="noreferrer">Telecharger l'image</a>
+            <a class="text-link artifact-image-link-secondary" target="_blank" rel="noreferrer" hidden>Telecharger l'image 2</a>
             <a class="text-link artifact-museum-link" target="_blank" rel="noreferrer">Voir dans le musee</a>
             <button class="button secondary danger artifact-delete-button" type="button">Supprimer l'objet</button>
           </div>

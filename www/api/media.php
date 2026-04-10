@@ -8,13 +8,21 @@ handle_api(function () {
 
     $itemId = validate_item_id(query_string('id'));
     $kind = (string) ($_GET['kind'] ?? '');
-    if ($kind !== 'image' && $kind !== 'model') {
+    if ($kind !== 'image' && $kind !== 'image2' && $kind !== 'model') {
         abort_request(400, 'Type de media invalide.');
     }
 
     $entry = public_item_or_404($itemId);
-    $filename = $kind === 'image' ? ($entry['image_filename'] ?? null) : ($entry['model_filename'] ?? null);
-    $mime = $kind === 'image' ? ($entry['image_mime'] ?? 'application/octet-stream') : ($entry['model_mime'] ?? 'application/octet-stream');
+    if ($kind === 'image') {
+        $filename = $entry['image_filename'] ?? null;
+        $mime = $entry['image_mime'] ?? 'application/octet-stream';
+    } elseif ($kind === 'image2') {
+        $filename = $entry['image_2_filename'] ?? null;
+        $mime = $entry['image_2_mime'] ?? 'application/octet-stream';
+    } else {
+        $filename = $entry['model_filename'] ?? null;
+        $mime = $entry['model_mime'] ?? 'application/octet-stream';
+    }
 
     if (!is_string($filename) || $filename === '') {
         abort_request(404, 'Fichier introuvable.');
@@ -25,7 +33,7 @@ handle_api(function () {
         abort_request(404, 'Fichier introuvable.');
     }
 
-    $disposition = $kind === 'image' ? 'inline' : 'attachment';
+    $disposition = $kind === 'model' ? 'attachment' : 'inline';
 
     send_no_store_headers();
     header('Content-Type: ' . $mime);

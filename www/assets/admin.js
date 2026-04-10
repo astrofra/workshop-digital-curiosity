@@ -32,6 +32,7 @@ const translations = {
     codeLabel: "Code {code}",
     unknownAuthor: "Auteur ou autrice non renseigne",
     imageLink: "Telecharger l'image",
+    imageLinkSecond: "Telecharger l'image 2",
     museumLink: "Voir dans le musee",
     deleteButton: "Supprimer l'objet",
     modelField: "Ajouter un GLB",
@@ -66,6 +67,7 @@ const translations = {
     codeLabel: "Code {code}",
     unknownAuthor: "Unknown author",
     imageLink: "Download image",
+    imageLinkSecond: "Download image 2",
     museumLink: "View in museum",
     deleteButton: "Delete object",
     modelField: "Add a GLB",
@@ -148,6 +150,16 @@ function updateCard(node, item) {
   node.dataset.itemId = item.id;
   node.querySelector(".artifact-image").src = item.image_url;
   node.querySelector(".artifact-image").alt = item.name;
+  node.querySelector(".artifact-image-grid").dataset.count = item.image_url_2 ? "2" : "1";
+  const secondaryImage = node.querySelector(".artifact-image-secondary");
+  secondaryImage.hidden = !item.image_url_2;
+  if (item.image_url_2) {
+    secondaryImage.src = item.image_url_2;
+    secondaryImage.alt = `${item.name} - second image`;
+  } else {
+    secondaryImage.removeAttribute("src");
+    secondaryImage.alt = "";
+  }
   node.querySelector(".artifact-badge").textContent = badge;
   node.querySelector(".artifact-date").textContent = formatDisplayDate(item.created_at, getLanguage());
   node.querySelector(".artifact-code").textContent = t("codeLabel", { code: item.participant_id });
@@ -156,6 +168,14 @@ function updateCard(node, item) {
   node.querySelector(".artifact-description").textContent = item.description;
   node.querySelector(".artifact-image-link").href = item.image_url;
   node.querySelector(".artifact-image-link").textContent = t("imageLink");
+  const secondaryLink = node.querySelector(".artifact-image-link-secondary");
+  secondaryLink.hidden = !item.image_url_2;
+  if (item.image_url_2) {
+    secondaryLink.href = item.image_url_2;
+    secondaryLink.textContent = t("imageLinkSecond");
+  } else {
+    secondaryLink.removeAttribute("href");
+  }
   node.querySelector(".artifact-museum-link").href = buildAppUrl(`#${item.id}`);
   node.querySelector(".artifact-museum-link").textContent = t("museumLink");
   node.querySelector(".artifact-delete-button").textContent = t("deleteButton");

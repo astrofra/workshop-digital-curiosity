@@ -91,6 +91,11 @@
             <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp,image/*" required />
           </label>
 
+          <label class="field">
+            <span>Seconde image (optionnel)</span>
+            <input type="file" name="image_2" accept=".png,.jpg,.jpeg,.webp,image/*" />
+          </label>
+
           <p class="status" data-form-status hidden></p>
 
           <button class="button" type="submit">Envoyer au cabinet</button>
@@ -110,13 +115,16 @@
           <h2>Trace visuelle</h2>
         </div>
         <div class="preview-frame">
-          <img data-preview-image alt="Apercu de l'image televersee" hidden />
+          <div class="preview-stack" data-preview-stack hidden>
+            <img data-preview-image alt="Apercu de la premiere image televersee" hidden />
+            <img data-preview-image-second alt="Apercu de la seconde image televersee" hidden />
+          </div>
           <div class="preview-empty" data-preview-empty>
-            <p>Votre image apparaitra ici avant d'entrer dans l'archive.</p>
+            <p>Vos images apparaitront ici avant d'entrer dans l'archive.</p>
           </div>
         </div>
         <p class="preview-caption">
-          Sans modele GLB, le musee exposera temporairement cette image comme artefact en attente.
+          Sans modele GLB, le musee exposera temporairement vos images composees sur un seul artefact en attente.
         </p>
       </aside>
     </main>

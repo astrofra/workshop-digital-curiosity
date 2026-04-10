@@ -29,6 +29,7 @@ Quel sens donnera l'humanité du futur à ces artefacts, une fois détachés de 
     dateLabel: "Date fictive (optionnel)",
     datePlaceholder: "An 2473, Epoque basaltique, etc.",
     imageLabel: "Image source",
+    imageSecondLabel: "Seconde image (optionnel)",
     submitIdle: "Envoyer au cabinet",
     submitBusy: "Envoi en cours...",
     confirmationEyebrow: "Archive mise a jour",
@@ -36,8 +37,8 @@ Quel sens donnera l'humanité du futur à ces artefacts, une fois détachés de 
     confirmationLink: "Voir le musee",
     previewEyebrow: "Apercu",
     previewTitle: "Trace visuelle",
-    previewEmpty: "Votre image apparaitra ici avant d'entrer dans l'archive.",
-    previewCaption: "Sans modele GLB, le musee exposera temporairement cette image comme artefact en attente.",
+    previewEmpty: "Vos images apparaitront ici avant d'entrer dans l'archive.",
+    previewCaption: "Sans modele GLB, le musee exposera temporairement vos images composees sur un seul artefact en attente.",
     successCreated: `Contribution enregistree. L'objet "{name}" est visible dans le musee. Vous pouvez encore modifier le formulaire puis renvoyer une nouvelle version.`,
     successReplaced: `Contribution remplacee. L'objet "{name}" est visible dans le musee. Vous pouvez encore modifier le formulaire puis renvoyer une nouvelle version.`,
     genericSuccess: "Contribution envoyee avec succes.",
@@ -65,6 +66,7 @@ What meaning will future humanity give to these artifacts once they have been de
     dateLabel: "Fictional date (optional)",
     datePlaceholder: "Year 2473, Basaltic Era, etc.",
     imageLabel: "Source image",
+    imageSecondLabel: "Second image (optional)",
     submitIdle: "Send to the cabinet",
     submitBusy: "Sending...",
     confirmationEyebrow: "Archive updated",
@@ -72,8 +74,8 @@ What meaning will future humanity give to these artifacts once they have been de
     confirmationLink: "View the museum",
     previewEyebrow: "Preview",
     previewTitle: "Visual trace",
-    previewEmpty: "Your image will appear here before entering the archive.",
-    previewCaption: "Without a GLB model, the museum will temporarily display this image as a waiting artifact.",
+    previewEmpty: "Your images will appear here before entering the archive.",
+    previewCaption: "Without a GLB model, the museum will temporarily display your blended images as a waiting artifact.",
     successCreated: `Contribution saved. The object "{name}" is now visible in the museum. You can still edit the form and send a revised version.`,
     successReplaced: `Contribution updated. The object "{name}" is now visible in the museum. You can still edit the form and send a revised version.`,
     genericSuccess: "Contribution sent successfully.",
@@ -97,7 +99,9 @@ const apiMessageTranslations = {
 
 const form = document.querySelector("[data-upload-form]");
 const statusElement = document.querySelector("[data-form-status]");
+const previewStack = document.querySelector("[data-preview-stack]");
 const previewImage = document.querySelector("[data-preview-image]");
+const previewImageSecond = document.querySelector("[data-preview-image-second]");
 const previewEmpty = document.querySelector("[data-preview-empty]");
 const confirmationCard = document.querySelector("[data-confirmation]");
 const confirmationText = document.querySelector("[data-confirmation-text]");
@@ -115,6 +119,7 @@ const confirmationLink = document.querySelector(".confirmation-card .text-link")
 
 const participantField = form.elements.participant_id;
 const imageField = form.elements.image;
+const imageFieldSecond = form.elements.image_2;
 const nameField = form.elements.name;
 const descriptionField = form.elements.description;
 const authorField = form.elements.author;
@@ -140,24 +145,84 @@ function translateApiMessage(message) {
 }
 
 function resetPreview() {
+  previewStack.dataset.count = "0";
+  previewStack.hidden = true;
   previewImage.hidden = true;
   previewImage.removeAttribute("src");
+  previewImageSecond.hidden = true;
+  previewImageSecond.removeAttribute("src");
   previewEmpty.hidden = false;
 }
 
-function updatePreview(file) {
-  if (!file) {
+function applyPreview(primarySource = "", secondarySource = "") {
+  const hasPrimary = Boolean(primarySource);
+  const hasSecondary = Boolean(secondarySource);
+  previewStack.dataset.count = hasPrimary && hasSecondary ? "2" : hasPrimary || hasSecondary ? "1" : "0";
+
+  previewStack.hidden = !hasPrimary && !hasSecondary;
+  previewImage.hidden = !hasPrimary;
+  previewImageSecond.hidden = !hasSecondary;
+
+  if (hasPrimary) {
+    previewImage.src = primarySource;
+  } else {
+    previewImage.removeAttribute("src");
+  }
+
+  if (hasSecondary) {
+    previewImageSecond.src = secondarySource;
+  } else {
+    previewImageSecond.removeAttribute("src");
+  }
+
+  previewEmpty.hidden = hasPrimary || hasSecondary;
+}
+
+function updatePreview() {
+  const primaryFile = imageField.files[0];
+  const secondaryFile = imageFieldSecond.files[0];
+
+  if (!primaryFile && !secondaryFile) {
     resetPreview();
     return;
   }
 
-  const reader = new FileReader();
-  reader.addEventListener("load", () => {
-    previewImage.src = reader.result;
-    previewImage.hidden = false;
-    previewEmpty.hidden = true;
+  let primarySource = "";
+  let secondarySource = "";
+  let pending = 0;
+
+  const maybeRender = () => {
+    if (pending === 0) {
+      applyPreview(primarySource, secondarySource);
+    }
+  };
+
+  const readFile = (file, assign) => {
+    if (!file) {
+      return;
+    }
+
+    pending += 1;
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      assign(String(reader.result || ""));
+      pending -= 1;
+      maybeRender();
+    });
+    reader.addEventListener("error", () => {
+      pending -= 1;
+      maybeRender();
+    });
+    reader.readAsDataURL(file);
+  };
+
+  readFile(primaryFile, (value) => {
+    primarySource = value;
   });
-  reader.readAsDataURL(file);
+  readFile(secondaryFile, (value) => {
+    secondarySource = value;
+  });
+  maybeRender();
 }
 
 function renderConfirmation() {
@@ -215,6 +280,7 @@ function applyTranslations() {
   authorField.closest(".field").querySelector("span").textContent = t("authorLabel");
   fictionalDateField.closest(".field").querySelector("span").textContent = t("dateLabel");
   imageField.closest(".field").querySelector("span").textContent = t("imageLabel");
+  imageFieldSecond.closest(".field").querySelector("span").textContent = t("imageSecondLabel");
 
   nameField.placeholder = t("objectNamePlaceholder");
   descriptionField.placeholder = t("descriptionPlaceholder");
@@ -231,7 +297,11 @@ participantField.addEventListener("input", () => {
 });
 
 imageField.addEventListener("change", () => {
-  updatePreview(imageField.files[0]);
+  updatePreview();
+});
+
+imageFieldSecond.addEventListener("change", () => {
+  updatePreview();
 });
 
 form.addEventListener("submit", async (event) => {
