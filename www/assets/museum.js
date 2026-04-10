@@ -170,6 +170,7 @@ const state = {
   swipeMoved: false,
   spinStartAt: 0,
   spinDuration: 3000,
+  hoverYaw: 0,
   activeIsFallback: false,
   transition: null,
   transitionDuration: 250,
@@ -237,6 +238,7 @@ function clearActiveObject() {
   state.activeFootprint = 1;
   state.activeIsFallback = false;
   state.isHoveringObject = false;
+  state.hoverYaw = 0;
   shadowCatcher.visible = false;
 }
 
@@ -428,6 +430,7 @@ function activatePreparedArtifact(prepared, index) {
   state.activeFootprint = prepared.footprint;
   state.activeIsFallback = prepared.isFallback;
   state.spinStartAt = 0;
+  state.hoverYaw = 0;
   shadowCatcher.visible = true;
   shadowCatcher.scale.setScalar(prepared.footprint);
   state.index = index;
@@ -736,7 +739,9 @@ function animate() {
 
   if (state.activeRoot) {
     const hoverTargetScale = state.pointerInsideStage && state.isHoveringObject ? 1.1 : 1;
+    const hoverTargetYaw = state.pointerInsideStage && state.isHoveringObject ? THREE.MathUtils.degToRad(35) : 0;
     state.activeScaleFactor += (hoverTargetScale - state.activeScaleFactor) * 0.12;
+    state.hoverYaw += (hoverTargetYaw - state.hoverYaw) * 0.12;
     if (state.activeBaseScale) {
       state.activeRoot.scale.copy(state.activeBaseScale).multiplyScalar(state.activeScaleFactor);
     }
@@ -752,7 +757,7 @@ function animate() {
         state.spinStartAt = 0;
       }
     }
-    displayPivot.rotation.y = baseRotationY + spinRotationY;
+    displayPivot.rotation.y = baseRotationY + state.hoverYaw + spinRotationY;
     displayPivot.rotation.z = Math.sin(time * 0.48) * 0.035;
     shadowCatcher.scale.y = shadowCatcher.scale.x * (0.92 + Math.sin(time * 1.15) * 0.04);
     shadowCatcher.material.opacity = 0.11 - Math.sin(time * 1.15) * 0.018;
