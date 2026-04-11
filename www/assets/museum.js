@@ -27,12 +27,65 @@ const nextButton = document.querySelector("[data-next]");
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.38;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 canvasHost.append(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x1a1d20, 9, 20);
+
+function makeStudioPanel(width, height, position, color) {
+  const panel = new THREE.Mesh(
+    new THREE.PlaneGeometry(width, height),
+    new THREE.MeshBasicMaterial({
+      color,
+      side: THREE.DoubleSide
+    })
+  );
+  panel.material.toneMapped = false;
+  panel.position.copy(position);
+  panel.lookAt(0, 1.1, 0);
+  return panel;
+}
+
+function createStudioEnvironment() {
+  const environmentScene = new THREE.Scene();
+
+  environmentScene.add(
+    new THREE.Mesh(
+      new THREE.SphereGeometry(18, 32, 16),
+      new THREE.MeshBasicMaterial({
+        color: 0x17191c,
+        side: THREE.BackSide
+      })
+    )
+  );
+
+  environmentScene.add(makeStudioPanel(9.5, 6.5, new THREE.Vector3(-4.8, 5.6, 5.0), new THREE.Color().setRGB(5.8, 5.0, 4.2)));
+  environmentScene.add(makeStudioPanel(6.5, 5.0, new THREE.Vector3(5.2, 3.1, 4.6), new THREE.Color().setRGB(1.8, 2.1, 2.6)));
+  environmentScene.add(makeStudioPanel(5.0, 4.0, new THREE.Vector3(-3.4, 2.2, -5.8), new THREE.Color().setRGB(1.5, 1.9, 2.4)));
+  environmentScene.add(makeStudioPanel(8.0, 3.0, new THREE.Vector3(0, 7.6, -0.5), new THREE.Color().setRGB(2.4, 2.1, 1.8)));
+
+  const pmremGenerator = new THREE.PMREMGenerator(renderer);
+  const renderTarget = pmremGenerator.fromScene(environmentScene, 0.04, 0.1, 100);
+  pmremGenerator.dispose();
+
+  environmentScene.traverse((object) => {
+    if (object.geometry) {
+      object.geometry.dispose();
+    }
+
+    if (object.material) {
+      object.material.dispose();
+    }
+  });
+
+  return renderTarget.texture;
+}
+
+scene.environment = createStudioEnvironment();
 
 const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
 camera.position.set(0, 2.35, 8.0);
@@ -346,6 +399,26 @@ function loadModel(url) {
   });
 }
 
+function tuneModelMaterials(object) {
+  object.traverse((child) => {
+    if (!child.isMesh) {
+      return;
+    }
+
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    materials.forEach((material) => {
+      if (!material) {
+        return;
+      }
+
+      if ("envMapIntensity" in material) {
+        material.envMapIntensity = Math.max(material.envMapIntensity || 1, 1.45);
+        material.needsUpdate = true;
+      }
+    });
+  });
+}
+
 async function buildImageArtifact(imageUrl, resources) {
   const texture = await loadTexture(imageUrl);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -444,6 +517,7 @@ async function buildArtifact(item, resources) {
           child.receiveShadow = true;
         }
       });
+      tuneModelMaterials(object);
       return {
         object,
         isFallback: false
