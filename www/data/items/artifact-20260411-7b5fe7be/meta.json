@@ -1,0 +1,17 @@
+{
+    "id": "artifact-20260411-7b5fe7be",
+    "participant_id": "RDIM",
+    "name": "Liquid Solidifier",
+    "description": "make liquids into solids",
+    "author": null,
+    "fictional_date": null,
+    "created_at": "2026-04-11",
+    "submitted_at": "2026-04-11T14:32:15+00:00",
+    "has_model": true,
+    "image_filename": "image.jpg",
+    "image_mime": "image/jpeg",
+    "image_2_filename": null,
+    "image_2_mime": null,
+    "model_filename": "model.glb",
+    "model_mime": "application/octet-stream"
+}

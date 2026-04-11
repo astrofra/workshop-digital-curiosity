@@ -1,0 +1,17 @@
+{
+    "id": "artifact-20260411-0487cff2",
+    "participant_id": "OFMT",
+    "name": "Voiture allume cigare",
+    "description": "Une voiture pour fumeur",
+    "author": "georges",
+    "fictional_date": "2033",
+    "created_at": "2026-04-11",
+    "submitted_at": "2026-04-11T14:47:43+00:00",
+    "has_model": true,
+    "image_filename": "image.webp",
+    "image_mime": "image/webp",
+    "image_2_filename": "image-2.jpg",
+    "image_2_mime": "image/jpeg",
+    "model_filename": "model.glb",
+    "model_mime": "application/octet-stream"
+}

@@ -909,8 +909,7 @@ b {
     width: min(100% - 2rem, 560px);
   }
 
-  .viewer-meta,
-  .nav-button-edge {
+  .viewer-meta {
     position: static;
     width: auto;
     margin: 1rem;
@@ -921,7 +920,11 @@ b {
   }
 
   .nav-button-edge {
-    transform: none;
+    top: clamp(17rem, 38dvh, 24rem);
+    width: 3.4rem;
+    height: 3.4rem;
+    margin: 0;
+    transform: translateY(-50%);
   }
 
   .viewer-stage {
@@ -969,7 +972,6 @@ b {
     font-size: 0.96rem;
   }
 
-  .nav-button,
   .button {
     width: 100%;
   }
@@ -982,14 +984,14 @@ b {
     align-items: stretch;
   }
 
-  .nav-button-edge {
-    width: 100%;
-    height: auto;
-    min-height: 3rem;
+  .viewer-stage .nav-button-edge {
+    width: 3rem;
+    height: 3rem;
+    min-height: 0;
   }
 
-  .nav-button-core {
-    min-height: 3rem;
+  .viewer-stage .nav-button-core {
+    min-height: 0;
   }
 }
 

@@ -1,0 +1,17 @@
+{
+    "id": "artifact-20260411-e1a24968",
+    "participant_id": "RPMH",
+    "name": "grille pain réveil",
+    "description": "réveille avec l'odeur du pain chaud",
+    "author": "Louis",
+    "fictional_date": "an 2226",
+    "created_at": "2026-04-11",
+    "submitted_at": "2026-04-11T14:34:03+00:00",
+    "has_model": true,
+    "image_filename": "image.webp",
+    "image_mime": "image/webp",
+    "image_2_filename": "image-2.jpg",
+    "image_2_mime": "image/jpeg",
+    "model_filename": "model.glb",
+    "model_mime": "application/octet-stream"
+}

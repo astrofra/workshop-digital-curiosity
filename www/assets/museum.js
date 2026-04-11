@@ -119,7 +119,7 @@ const translations = {
     objectLoadError: "Impossible de charger cet artefact.",
     unknownAuthor: "auteur.ice inconnu.e",
     authorPrefix: "Par",
-    dateLabel: "Date",
+    dateLabel: "Date : ",
     fallbackState: "Image source exposee en attendant le modele GLB"
   },
   en: {
@@ -138,7 +138,7 @@ const translations = {
     objectLoadError: "Unable to load this artifact.",
     unknownAuthor: "unknown author",
     authorPrefix: "By",
-    dateLabel: "Date",
+    dateLabel: "Date: ",
     fallbackState: "Source image displayed while awaiting the GLB model"
   }
 };

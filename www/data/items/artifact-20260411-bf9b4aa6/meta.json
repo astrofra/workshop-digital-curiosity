@@ -1,0 +1,17 @@
+{
+    "id": "artifact-20260411-bf9b4aa6",
+    "participant_id": "JWJQ",
+    "name": "weather",
+    "description": "experimental substance",
+    "author": "anna",
+    "fictional_date": "1337",
+    "created_at": "2026-04-11",
+    "submitted_at": "2026-04-11T14:34:02+00:00",
+    "has_model": true,
+    "image_filename": "image.jpg",
+    "image_mime": "image/jpeg",
+    "image_2_filename": "image-2.jpg",
+    "image_2_mime": "image/jpeg",
+    "model_filename": "model.glb",
+    "model_mime": "application/octet-stream"
+}
